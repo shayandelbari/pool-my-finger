@@ -1,11 +1,24 @@
 import time
 
-TYPES = {
-    "PISI": "Indoor swimming pool",
-    "PIEX": "Outdoor swimming pool",
-    "PATA": "Wading pool",
-    "JEUD": "Play fountains"
-}
+class _TYPES(dict):
+    def __init__(self):
+        super().__init__()
+        self['PISI'] = "Indoor swimming pool"
+        self['PIEX'] = "Outdoor swimming pool"
+        self['PATA'] = "Wading pool"
+        self['JEUD'] = "Play fountains"
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            # Allow indexing by position
+            keys = list(self.keys())
+            return keys[key]
+        return super().__getitem__(key)
+
+    def __iter__(self):
+        return iter(self.keys())
+
+TYPES = _TYPES()
 
 class PoolType:
     def __init__(self, name : str, description : str):
