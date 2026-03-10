@@ -48,14 +48,6 @@ if ($force) {
 // Table definitions
 $tables = [
 
-    "CREATE TABLE IF NOT EXISTS pool_types (
-        id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        name VARCHAR(50) NOT NULL,
-        description VARCHAR(255) DEFAULT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uq_pool_types_name (name)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
     "CREATE TABLE IF NOT EXISTS pools (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         name VARCHAR(255) NOT NULL,
@@ -75,6 +67,32 @@ $tables = [
             ON UPDATE CASCADE
             ON DELETE RESTRICT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+    "CREATE TABLE IF NOT EXISTS pool_types (
+        id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        description VARCHAR(255) DEFAULT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_pool_types_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+    "CREATE TABLE IF NOT EXISTS pool_pool_types (
+        pool_id BIGINT UNSIGNED NOT NULL,
+        pool_type_id SMALLINT UNSIGNED NOT NULL,
+
+        PRIMARY KEY (pool_id, pool_type_id),
+
+        CONSTRAINT fk_pool_pool_types_pool
+            FOREIGN KEY (pool_id)
+            REFERENCES pools(id)
+            ON DELETE CASCADE,
+
+        CONSTRAINT fk_pool_pool_types_type
+            FOREIGN KEY (pool_type_id)
+            REFERENCES pool_types(id)
+            ON UPDATE CASCADE
+            ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
 
     "CREATE TABLE IF NOT EXISTS schedule_types (
         id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
