@@ -1,12 +1,12 @@
-/* I will take an instance of class pool and use the attributes to fill this template component */
+<!-- I will take an instance of class pool and use the attributes to fill this template component -->
 
 <!DOCTYPE html>
 <html>
 <div>
     <h2> [NAME OF POOL] </h2>
     <div>
-        <img src="assets/no-image-icon.png" 
-        onerror="this.src='assets/no-image-icon.png';">
+        <img src="[string of link]" 
+        onerror="this.src='../assets/no-image-icon.png';">
     </div>
     <div>
         <h3> [ADDRESS] </h3>
@@ -16,4 +16,3 @@
     </div>
 </div>
 </html>
-
