@@ -1,12 +1,12 @@
-
 <!-- THIS IS THE LOGIN PAGE FOR ADMIN -->
 <!DOCTYPE html>
 
 <html>
+
 <head>
     <?php
     // Fn to call the header, might be JS not PHP, we'll see
-    ?> 
+    ?>
 </head>
 
 <body>
@@ -27,8 +27,8 @@
 
 <footer>
     <?php
-        // Fn to call the footer
-        ?> 
+    // Fn to call the footer
+    ?>
 </footer>
-    
+
 </html>
