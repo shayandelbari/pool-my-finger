@@ -1,32 +1,16 @@
 <?php
 /**
- * create_schema.php
+ * schema.php
  *
- * - Reads DB config from environment variables.
- * - Optional --force flag drops tables before creation.
+ * Uses existing db() connection.
+ * Optional --force flag drops tables before creation.
  */
 
-$force = in_array('--force', $argv, true);
+require_once __DIR__ . '/connection.php';
 
-// Read environment variables
-$DB_HOST = getenv('DB_HOST') ?: '127.0.0.1';
-$DB_PORT = getenv('DB_PORT') ?: '3306';
-$DB_NAME = getenv('DB_NAME') ?: 'pools_app';
-$DB_USER = getenv('DB_USER') ?: 'root';
-$DB_PASS = getenv('DB_PASS') ?: '';
+$pdo = db();
 
-$dsn = "mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4";
-
-// Create PDO connection
-try {
-    $pdo = new PDO($dsn, $DB_USER, $DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    ]);
-} catch (PDOException $e) {
-    fwrite(STDERR, "Connection failed: " . $e->getMessage() . PHP_EOL);
-    exit(1);
-}
+$force = in_array('--force', $argv ?? [], true);
 
 // Drop tables if --force is specified
 if ($force) {
@@ -36,6 +20,7 @@ if ($force) {
         $pdo->exec("DROP TABLE IF EXISTS users");
         $pdo->exec("DROP TABLE IF EXISTS schedules");
         $pdo->exec("DROP TABLE IF EXISTS schedule_types");
+        $pdo->exec("DROP TABLE IF EXISTS pool_pool_types");
         $pdo->exec("DROP TABLE IF EXISTS pools");
         $pdo->exec("DROP TABLE IF EXISTS pool_types");
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
@@ -45,9 +30,7 @@ if ($force) {
     }
 }
 
-// Table definitions
 $tables = [
-
     "CREATE TABLE IF NOT EXISTS pools (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         name VARCHAR(255) NOT NULL,
@@ -79,20 +62,17 @@ $tables = [
     "CREATE TABLE IF NOT EXISTS pool_pool_types (
         pool_id BIGINT UNSIGNED NOT NULL,
         pool_type_id SMALLINT UNSIGNED NOT NULL,
-
         PRIMARY KEY (pool_id, pool_type_id),
-
         CONSTRAINT fk_pool_pool_types_pool
             FOREIGN KEY (pool_id)
             REFERENCES pools(id)
             ON DELETE CASCADE,
-
         CONSTRAINT fk_pool_pool_types_type
             FOREIGN KEY (pool_type_id)
             REFERENCES pool_types(id)
             ON UPDATE CASCADE
             ON DELETE RESTRICT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     "CREATE TABLE IF NOT EXISTS schedule_types (
         id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -150,10 +130,9 @@ $tables = [
             FOREIGN KEY (user_id)
             REFERENCES users(id)
             ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
 ];
 
-// Create tables
 foreach ($tables as $sql) {
     try {
         $pdo->exec($sql);
@@ -166,4 +145,3 @@ foreach ($tables as $sql) {
 echo $force
     ? "Schema forcefully recreated.\n"
     : "Schema created.\n";
-
