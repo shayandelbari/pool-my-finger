@@ -6,11 +6,11 @@
  * Optional --force flag drops tables before creation.
  */
 
-require_once __DIR__ . '/connection.php';
+require_once __DIR__ . "/connection.php";
 
 $pdo = db();
 
-$force = in_array('--force', $argv ?? [], true);
+$force = in_array("--force", $argv ?? [], true);
 
 // Drop tables if --force is specified
 if ($force) {
@@ -85,17 +85,13 @@ $tables = [
     "CREATE TABLE IF NOT EXISTS schedules (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         pool_id BIGINT UNSIGNED NOT NULL,
-        day_of_week ENUM(
-            'sunday','monday','tuesday',
-            'wednesday','thursday','friday','saturday'
-        ) NOT NULL,
-        start_time TIME NOT NULL,
-        end_time TIME NOT NULL,
         schedule_type_id SMALLINT UNSIGNED NOT NULL,
-        notes TEXT DEFAULT NULL,
+        effective_date DATE NOT NULL,
+        end_date DATE NOT NULL,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
-        KEY idx_schedules_pool_day (pool_id, day_of_week),
+        KEY idx_schedules_pool (pool_id),
+        KEY idx_schedules_dates (effective_date, end_date),
         CONSTRAINT fk_schedules_pool
             FOREIGN KEY (pool_id)
             REFERENCES pools(id)
@@ -105,6 +101,24 @@ $tables = [
             REFERENCES schedule_types(id)
             ON UPDATE CASCADE
             ON DELETE RESTRICT
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+    "CREATE TABLE IF NOT EXISTS time_blocks (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        schedule_id BIGINT UNSIGNED NOT NULL,
+        day_of_week ENUM(
+            'sunday','monday','tuesday',
+            'wednesday','thursday','friday','saturday'
+        ) NOT NULL,
+        start_time TIME NOT NULL,
+        end_time TIME NOT NULL,
+        label VARCHAR(100) DEFAULT NULL,
+        PRIMARY KEY (id),
+        KEY idx_blocks_schedule_day (schedule_id, day_of_week),
+        CONSTRAINT fk_blocks_schedule
+            FOREIGN KEY (schedule_id)
+            REFERENCES schedules(id)
+            ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     "CREATE TABLE IF NOT EXISTS users (
@@ -130,7 +144,7 @@ $tables = [
             FOREIGN KEY (user_id)
             REFERENCES users(id)
             ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 ];
 
 foreach ($tables as $sql) {
@@ -142,6 +156,4 @@ foreach ($tables as $sql) {
     }
 }
 
-echo $force
-    ? "Schema forcefully recreated.\n"
-    : "Schema created.\n";
+echo $force ? "Schema forcefully recreated.\n" : "Schema created.\n";
