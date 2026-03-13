@@ -1,0 +1,31 @@
+{
+  "name": "pool-my-finger",
+  "version": "1.0.0",
+  "description": "Early Project Planning and Architecture: https://docs.google.com/document/d/1-8W4G4xn1iulS8VQ8h-acFAy4ne7YoXQg-JgpVC1h9A/edit?usp=sharing",
+  "homepage": "https://github.com/shayandelbari/pool-my-finger#readme",
+  "bugs": {
+    "url": "https://github.com/shayandelbari/pool-my-finger/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shayandelbari/pool-my-finger.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "type": "commonjs",
+  "main": "public/index.php",
+  "scripts": {
+    "dev": "npx @tailwindcss/cli -i ./src/styles/app.css -o ./public/assets/styles.css --watch",
+    "build": "npx @tailwindcss/cli -i ./src/styles/app.css -o ./public/assets/styles.css --minify",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.1",
+    "tailwindcss": "^4.2.1"
+  },
+  "devDependencies": {
+    "@prettier/plugin-php": "^0.24.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2"
+  }
+}
