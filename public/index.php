@@ -1,6 +1,6 @@
 <?php
 
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 
 /*
  |------------------------------------------------------------
@@ -8,16 +8,16 @@ $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
  |------------------------------------------------------------
 */
 
-$base = dirname(dirname($_SERVER['SCRIPT_NAME']));
+$base = dirname(dirname($_SERVER["SCRIPT_NAME"]));
 
-if ($base !== '/' && str_starts_with($uri, $base)) {
+if ($base !== "/" && str_starts_with($uri, $base)) {
     $uri = substr($uri, strlen($base));
 }
 
-$path = rtrim($uri, '/');
+$path = rtrim($uri, "/");
 
-if ($path === '') {
-    $path = '/';
+if ($path === "") {
+    $path = "/";
 }
 
 /*
@@ -27,10 +27,10 @@ if ($path === '') {
 */
 
 $routes = [
-    '/' => 'home.php',
-    '/admin' => 'admin.php',
-    '/login' => 'login.php',
-    '/pool' => 'pool.php',
+    "/" => "home.php",
+    "/admin" => "admin.php",
+    "/login" => "login.php",
+    "/pool" => "pool.php",
 ];
 
 /*
@@ -39,21 +39,12 @@ $routes = [
  |------------------------------------------------------------
 */
 
-if (str_starts_with($path, '/api')) {
-
+if (str_starts_with($path, "/api")) {
     $apiPath = substr($path, 4);
-    $apiPath = trim($apiPath, '/');
-    $apiPath = str_replace('..', '', $apiPath);
-
-    $file = $apiPath === '' ? __DIR__ . '/../src/api/index.php' : __DIR__ . '/../src/api/' . $apiPath . '.php';
-
-    if (file_exists($file)) {
-        require $file;
-        return;
-    }
-
-    http_response_code(404);
-    echo "API endpoint not found";
+    $apiPath = trim($apiPath, "/");
+    $apiPath = str_replace("..", "", $apiPath);
+    define("API_PATH", $apiPath);
+    require __DIR__ . "/../src/api/index.php";
     return;
 }
 
@@ -64,7 +55,7 @@ if (str_starts_with($path, '/api')) {
 */
 
 if (isset($routes[$path])) {
-    require __DIR__ . '/../src/pages/' . $routes[$path];
+    require __DIR__ . "/../src/pages/" . $routes[$path];
     return;
 }
 
