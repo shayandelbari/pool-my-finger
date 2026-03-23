@@ -1,16 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./src/pages/**/*.php",
-    "./src/components/**/*.php"
-  ],
+  content: ["./src/pages/**/*.php", "./src/components/**/*.php"],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
         // primary: "#2563eb",
         // secondary: "#f97316"
-      }
-    }
+      },
+    },
   },
-  plugins: []
-}
+  plugins: [],
+};

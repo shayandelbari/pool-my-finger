@@ -15,8 +15,8 @@
   "type": "commonjs",
   "main": "public/index.php",
   "scripts": {
-    "dev": "npx @tailwindcss/cli -i ./src/styles/app.css -o ./public/assets/styles.css --watch",
-    "build": "npx @tailwindcss/cli -i ./src/styles/app.css -o ./public/assets/styles.css --minify",
+    "dev": "npx @tailwindcss/cli -i ./src/styles/app.css -o ./public/assets/css/styles.css --watch",
+    "build": "npx @tailwindcss/cli -i ./src/styles/app.css -o ./public/assets/css/styles.css --minify",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
