@@ -8,14 +8,19 @@
 
 require_once __DIR__ . "/connection.php";
 
+$SCRAPER_DIR = __DIR__ . "/../scraper";
+$PYTHON_FILE = $SCRAPER_DIR . "/pool-scraper.py";
+$OUTPUT_JSON = __DIR__ . "/cache/output.json";
 $pdo = db();
 
 $force = in_array("--force", $argv ?? [], true);
+$scrape = in_array("--scrape", $argv ?? [], true);
 
 // Drop tables if --force is specified
 if ($force) {
     try {
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+        $pdo->exec("DROP TABLE IF EXISTS time_blocks");
         $pdo->exec("DROP TABLE IF EXISTS sessions");
         $pdo->exec("DROP TABLE IF EXISTS users");
         $pdo->exec("DROP TABLE IF EXISTS schedules");
@@ -31,6 +36,14 @@ if ($force) {
 }
 
 $tables = [
+    "CREATE TABLE IF NOT EXISTS pool_types (
+        id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        description VARCHAR(255) DEFAULT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_pool_types_name (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
     "CREATE TABLE IF NOT EXISTS pools (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         name VARCHAR(255) NOT NULL,
@@ -49,14 +62,6 @@ $tables = [
             REFERENCES pool_types(id)
             ON UPDATE CASCADE
             ON DELETE RESTRICT
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
-
-    "CREATE TABLE IF NOT EXISTS pool_types (
-        id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-        name VARCHAR(50) NOT NULL,
-        description VARCHAR(255) DEFAULT NULL,
-        PRIMARY KEY (id),
-        UNIQUE KEY uq_pool_types_name (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     "CREATE TABLE IF NOT EXISTS pool_pool_types (
@@ -157,3 +162,252 @@ foreach ($tables as $sql) {
 }
 
 echo $force ? "Schema forcefully recreated.\n" : "Schema created.\n";
+
+function find_python_binary($scraperDir)
+{
+    $venvPython = $scraperDir . "/venv/bin/python";
+    if (is_file($venvPython) && is_executable($venvPython)) {
+        return $venvPython;
+    }
+
+    $python3 = trim((string)shell_exec("command -v python3 2>/dev/null"));
+    if ($python3 !== "") {
+        return $python3;
+    }
+
+    $python = trim((string)shell_exec("command -v python 2>/dev/null"));
+    if ($python !== "") {
+        return $python;
+    }
+
+    return null;
+}
+
+function run_scraper_to_json($scraperDir, $pythonFile, $outputJson)
+{
+    $pythonBinary = find_python_binary($scraperDir);
+    if ($pythonBinary === null) {
+        fwrite(STDERR, "No Python executable found (tried venv, python3, python)." . PHP_EOL);
+        return false;
+    }
+
+    $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
+    $dbPort = getenv('DB_PORT') ?: '3306';
+    $dbName = getenv('DB_NAME') ?: 'pool_my_finger';
+    $dbUser = getenv('DB_USER') ?: 'root';
+    $dbPass = getenv('DB_PASS') ?: '';
+
+    $envPrefix = "DB_HOST=" . escapeshellarg($dbHost)
+        . " DB_PORT=" . escapeshellarg($dbPort)
+        . " DB_NAME=" . escapeshellarg($dbName)
+        . " DB_USER=" . escapeshellarg($dbUser)
+        . " DB_PASS=" . escapeshellarg($dbPass)
+        . " ENV=" . escapeshellarg('prod');
+
+    $cmd = "cd " . escapeshellarg($scraperDir)
+        . " && " . $envPrefix
+        . " " . escapeshellarg($pythonBinary)
+        . " " . escapeshellarg($pythonFile)
+        . " --quiet --output-json " . escapeshellarg($outputJson)
+        . " 2>&1";
+
+    $outputLines = [];
+    $exitCode = 0;
+    exec($cmd, $outputLines, $exitCode);
+
+    if ($exitCode !== 0) {
+        fwrite(STDERR, "Scraper execution failed (exit code {$exitCode})." . PHP_EOL);
+        if (!empty($outputLines)) {
+            fwrite(STDERR, implode(PHP_EOL, $outputLines) . PHP_EOL);
+        }
+        return false;
+    }
+
+    return true;
+}
+
+function import_scraped_json(PDO $pdo, $outputJson)
+{
+    if (!is_file($outputJson)) {
+        throw new RuntimeException("Scraper output not found at {$outputJson}");
+    }
+
+    $raw = file_get_contents($outputJson);
+    if ($raw === false || trim($raw) === "") {
+        throw new RuntimeException("Scraper output JSON is empty.");
+    }
+
+    $payload = json_decode($raw, true);
+    if (!is_array($payload) || !isset($payload['pools']) || !is_array($payload['pools'])) {
+        throw new RuntimeException("Invalid scraper JSON format.");
+    }
+
+    $pools = $payload['pools'];
+
+    $pdo->beginTransaction();
+    try {
+        // Keep imported data idempotent between runs.
+        $pdo->exec("DELETE FROM time_blocks");
+        $pdo->exec("DELETE FROM schedules");
+        $pdo->exec("DELETE FROM pool_pool_types");
+        $pdo->exec("DELETE FROM pools");
+        $pdo->exec("DELETE FROM schedule_types");
+        $pdo->exec("DELETE FROM pool_types");
+
+        $insertPoolType = $pdo->prepare(
+            "INSERT INTO pool_types (name, description)
+             VALUES (:name, :description)
+             ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), description = VALUES(description)"
+        );
+
+        $insertPool = $pdo->prepare(
+            "INSERT INTO pools (name, full_address, primary_image_url, website, map_link, phone, pool_type_id, is_active)
+             VALUES (:name, :full_address, :primary_image_url, :website, :map_link, :phone, :pool_type_id, :is_active)"
+        );
+
+        $insertPoolPoolType = $pdo->prepare(
+            "INSERT IGNORE INTO pool_pool_types (pool_id, pool_type_id)
+             VALUES (:pool_id, :pool_type_id)"
+        );
+
+        $insertScheduleType = $pdo->prepare(
+            "INSERT INTO schedule_types (name, description)
+             VALUES (:name, :description)
+             ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), description = VALUES(description)"
+        );
+
+        $insertSchedule = $pdo->prepare(
+            "INSERT INTO schedules (pool_id, schedule_type_id, effective_date, end_date)
+             VALUES (:pool_id, :schedule_type_id, :effective_date, :end_date)"
+        );
+
+        $insertTimeBlock = $pdo->prepare(
+            "INSERT INTO time_blocks (schedule_id, day_of_week, start_time, end_time, label)
+             VALUES (:schedule_id, :day_of_week, :start_time, :end_time, :label)"
+        );
+
+        $importedPools = 0;
+
+        foreach ($pools as $pool) {
+            if (!is_array($pool)) {
+                continue;
+            }
+
+            $record = (isset($pool['db_record']) && is_array($pool['db_record'])) ? $pool['db_record'] : $pool;
+
+            $poolTypeName = trim((string)($record['pool_type_name'] ?? $pool['pool_type_name'] ?? $pool['pool_type'] ?? 'Unknown'));
+            if ($poolTypeName === '') {
+                $poolTypeName = 'Unknown';
+            }
+            $poolTypeName = mb_substr($poolTypeName, 0, 50);
+
+            $insertPoolType->execute([
+                ':name' => $poolTypeName,
+                ':description' => $record['pool_type_description'] ?? (string)($pool['pool_type'] ?? null),
+            ]);
+            $poolTypeId = (int)$pdo->lastInsertId();
+
+            $insertPool->execute([
+                ':name' => mb_substr((string)($record['name'] ?? $pool['name'] ?? 'Unknown Pool'), 0, 255),
+                ':full_address' => $record['full_address'] ?? $pool['address'] ?? null,
+                ':primary_image_url' => $record['primary_image_url'] ?? $pool['primary_image_url'] ?? null,
+                ':website' => $record['website'] ?? $pool['url'] ?? null,
+                ':map_link' => $record['map_link'] ?? $pool['map_link'] ?? null,
+                ':phone' => $record['phone'] ?? $pool['phone'] ?? null,
+                ':pool_type_id' => $poolTypeId,
+                ':is_active' => isset($record['is_active']) ? (int)$record['is_active'] : (!empty($pool['is_active']) ? 1 : 0),
+            ]);
+            $poolId = (int)$pdo->lastInsertId();
+
+            $insertPoolPoolType->execute([
+                ':pool_id' => $poolId,
+                ':pool_type_id' => $poolTypeId,
+            ]);
+
+            $schedules = $record['schedules'] ?? $pool['schedules'] ?? [];
+            if (!is_array($schedules)) {
+                $schedules = [];
+            }
+
+            foreach ($schedules as $schedule) {
+                if (!is_array($schedule)) {
+                    continue;
+                }
+
+                $scheduleTypeName = trim((string)($schedule['activity_name'] ?? $schedule['activity'] ?? 'General'));
+                if ($scheduleTypeName === '') {
+                    $scheduleTypeName = 'General';
+                }
+                $scheduleTypeName = mb_substr($scheduleTypeName, 0, 50);
+
+                $insertScheduleType->execute([
+                    ':name' => $scheduleTypeName,
+                    ':description' => null,
+                ]);
+                $scheduleTypeId = (int)$pdo->lastInsertId();
+
+                $effectiveDate = (string)($schedule['effective_date_iso'] ?? date('Y-m-d'));
+                $endDate = (string)($schedule['end_date_iso'] ?? $effectiveDate);
+
+                $insertSchedule->execute([
+                    ':pool_id' => $poolId,
+                    ':schedule_type_id' => $scheduleTypeId,
+                    ':effective_date' => $effectiveDate,
+                    ':end_date' => $endDate,
+                ]);
+                $scheduleId = (int)$pdo->lastInsertId();
+
+                $timeBlocks = $schedule['time_blocks'] ?? [];
+                if (!is_array($timeBlocks)) {
+                    $timeBlocks = [];
+                }
+
+                foreach ($timeBlocks as $block) {
+                    if (!is_array($block)) {
+                        continue;
+                    }
+
+                    $day = strtolower((string)($block['day_of_week'] ?? $block['day'] ?? ''));
+                    if (!in_array($day, ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'], true)) {
+                        continue;
+                    }
+
+                    $startTime = (string)($block['start_time'] ?? $block['start'] ?? '00:00');
+                    $endTime = (string)($block['end_time'] ?? $block['end'] ?? $startTime);
+
+                    $insertTimeBlock->execute([
+                        ':schedule_id' => $scheduleId,
+                        ':day_of_week' => $day,
+                        ':start_time' => $startTime,
+                        ':end_time' => $endTime,
+                        ':label' => isset($block['label']) ? mb_substr((string)$block['label'], 0, 100) : null,
+                    ]);
+                }
+            }
+
+            $importedPools++;
+        }
+
+        $pdo->commit();
+        echo "Imported {$importedPools} pools from scraper output." . PHP_EOL;
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}
+
+if ($scrape) {
+    echo "Running montreal-pool-scraper and importing JSON into database..." . PHP_EOL;
+
+    if (!run_scraper_to_json($SCRAPER_DIR, $PYTHON_FILE, $OUTPUT_JSON)) {
+        exit(1);
+    }
+
+    try {
+        import_scraped_json($pdo, $OUTPUT_JSON);
+        echo "Scrape and import completed successfully." . PHP_EOL;
+    } catch (Throwable $e) {
+        fwrite(STDERR, "Import failed: " . $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+}
