@@ -8,6 +8,13 @@
   <title>Home</title>
 </head>
 
+
+
+<?php include COMPONENTS_PATH . '/header.php'; ?>
+
+
+
+<!-- The body below is test and will be eventually deleted -->
 <body>
   <h1>Home</h1>
   <p class="p-4 text-white bg-blue-500">testing tailwind</p>
