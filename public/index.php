@@ -1,7 +1,7 @@
 <?php
 
 // config global variables for easy file access (Frontend, PHP)
-require_once __DIR__ . '/../src/config/app.php';
+require_once __DIR__ . '/../src/config/utils.php';
 
 
 $uri = parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);

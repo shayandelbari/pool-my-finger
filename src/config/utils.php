@@ -11,5 +11,12 @@ define('PAGES_PATH', SRC_PATH . '/pages');
 define('ASSETS_PATH', PUBLIC_PATH . '/assets');
 
 // URL paths (for browser)
-define('BASE_URL', '/PMF/pool-my-finger/public');
+define('BASE_URL', '/pool-my-finger');
 define('ASSETS_URL', BASE_URL . '/assets');
+
+/* This is a pain the ass RN, not using
+//Function to call a page by just using PHP and the page's name as parameter
+function urlByPageName($page) {
+    return BASE_URL . '/index.php?page='. urlencode($page);
+}
+    */

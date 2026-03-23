@@ -19,7 +19,15 @@
   <h1>Home</h1>
   <p class="p-4 text-white bg-blue-500">testing tailwind</p>
   <p class="p-4 bg-background text-foreground">Testing new theming system</p>
-  <p class="p-4 bg-primary text-primary-foreground">Primary button style</p>
+  <p class="p-4 bg-primary text-primary-foreground">Primary style</p>
 </body>
+
+<br>
+<footer>
+  <div>
+    
+    <?php include COMPONENTS_PATH . '/admin-link.php'; ?>
+  </div>
+</footer>
 
 </html>
