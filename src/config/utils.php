@@ -14,9 +14,3 @@ define('ASSETS_PATH', PUBLIC_PATH . '/assets');
 define('BASE_URL', '/pool-my-finger');
 define('ASSETS_URL', BASE_URL . '/assets');
 
-/* This is a pain the ass RN, not using
-//Function to call a page by just using PHP and the page's name as parameter
-function urlByPageName($page) {
-    return BASE_URL . '/index.php?page='. urlencode($page);
-}
-    */
