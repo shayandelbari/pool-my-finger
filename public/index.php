@@ -48,7 +48,7 @@ if (str_starts_with($path, "/api")) {
     $apiPath = trim($apiPath, "/");
     $apiPath = str_replace("..", "", $apiPath);
     define("API_PATH", $apiPath);
-    require __DIR__ . "/../src/api/index.php";
+    require __DIR__ . "/../src/backend/api/index.php";
     return;
 }
 
@@ -59,7 +59,7 @@ if (str_starts_with($path, "/api")) {
 */
 
 if (isset($routes[$path])) {
-    require __DIR__ . "/../src/pages/" . $routes[$path];
+    require __DIR__ . "/../src/frontend/pages/" . $routes[$path];
     return;
 }
 
