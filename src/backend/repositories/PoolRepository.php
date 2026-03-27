@@ -9,10 +9,11 @@
  * They do not know anything about HTTP, routing, or JSON responses.
  *
  * Overall request flow:
- * public/index.php → src/api/index.php (router) → controller → repository → database
+ * public/index.php → src/backend/api/index.php (router) → controller → repository → database
  */
 
 // Placeholder for PoolRepository class
-class PoolRepository {
+class PoolRepository
+{
     // Example methods: findAll(), findById($id), save($pool), delete($id), etc.
 }

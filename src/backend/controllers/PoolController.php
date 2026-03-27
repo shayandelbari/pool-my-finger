@@ -10,10 +10,11 @@
  * Controllers coordinate the request but do not access the database directly.
  *
  * Overall request flow:
- * public/index.php → src/api/index.php (router) → controller → repository → database
+ * public/index.php → src/backend/api/index.php (router) → controller → repository → database
  */
 
 // Placeholder for PoolController class
-class PoolController {
+class PoolController
+{
     // Example methods: getPools(), getPoolById($id), createPool($data), etc.
 }

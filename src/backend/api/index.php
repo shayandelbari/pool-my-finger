@@ -8,7 +8,7 @@
  * It calls methods in the controllers to process the request.
  *
  * Overall request flow:
- * public/index.php → src/api/index.php (router) → controller → repository → database
+ * public/index.php → src/backend/api/index.php (router) → controller → repository → database
  */
 
 // Parse the API path (done in public/index.php)
@@ -24,7 +24,7 @@ switch ($apiPath) {
 
     case "pools":
         // Hey Ed, route to PoolController for pool-related endpoints.
-        // Example: require_once 'controllers/PoolController.php'; $controller = new PoolController(); $controller->handleRequest();
+        // Example: require_once '../controllers/PoolController.php'; $controller = new PoolController(); $controller->handleRequest();
         echo json_encode(["message" => "Pools endpoint - not implemented yet"]);
         break;
 

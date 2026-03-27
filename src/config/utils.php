@@ -6,8 +6,8 @@ define('ROOT_PATH', realpath(SRC_PATH . '/..'));
 define('PUBLIC_PATH', ROOT_PATH . '/public');
 
 // Feature paths (filesystem)
-define('COMPONENTS_PATH', SRC_PATH . '/components');
-define('PAGES_PATH', SRC_PATH . '/pages');
+define('COMPONENTS_PATH', SRC_PATH . '/frontend/components');
+define('PAGES_PATH', SRC_PATH . '/frontend/pages');
 define('ASSETS_PATH', PUBLIC_PATH . '/assets');
 
 // URL paths (for browser)

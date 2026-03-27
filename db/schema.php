@@ -51,6 +51,8 @@ $tables = [
         primary_image_url VARCHAR(2048) DEFAULT NULL,
         website VARCHAR(2048) DEFAULT NULL,
         map_link VARCHAR(2048) DEFAULT NULL,
+        latt DOUBLE DEFAULT NULL,
+        longt DOUBLE DEFAULT NULL,
         phone CHAR(12) DEFAULT NULL,
         pool_type_id SMALLINT UNSIGNED NOT NULL,
         is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -170,12 +172,12 @@ function find_python_binary($scraperDir)
         return $venvPython;
     }
 
-    $python3 = trim((string)shell_exec("command -v python3 2>/dev/null"));
+    $python3 = trim((string) shell_exec("command -v python3 2>/dev/null"));
     if ($python3 !== "") {
         return $python3;
     }
 
-    $python = trim((string)shell_exec("command -v python 2>/dev/null"));
+    $python = trim((string) shell_exec("command -v python 2>/dev/null"));
     if ($python !== "") {
         return $python;
     }
@@ -226,6 +228,7 @@ function run_scraper_to_json($scraperDir, $pythonFile, $outputJson)
     return true;
 }
 
+// TODO: add inserting latt and longt from the scraper output
 function import_scraped_json(PDO $pdo, $outputJson)
 {
     if (!is_file($outputJson)) {
@@ -295,7 +298,7 @@ function import_scraped_json(PDO $pdo, $outputJson)
 
             $record = (isset($pool['db_record']) && is_array($pool['db_record'])) ? $pool['db_record'] : $pool;
 
-            $poolTypeName = trim((string)($record['pool_type_name'] ?? $pool['pool_type_name'] ?? $pool['pool_type'] ?? 'Unknown'));
+            $poolTypeName = trim((string) ($record['pool_type_name'] ?? $pool['pool_type_name'] ?? $pool['pool_type'] ?? 'Unknown'));
             if ($poolTypeName === '') {
                 $poolTypeName = 'Unknown';
             }
@@ -303,21 +306,21 @@ function import_scraped_json(PDO $pdo, $outputJson)
 
             $insertPoolType->execute([
                 ':name' => $poolTypeName,
-                ':description' => $record['pool_type_description'] ?? (string)($pool['pool_type'] ?? null),
+                ':description' => $record['pool_type_description'] ?? (string) ($pool['pool_type'] ?? null),
             ]);
-            $poolTypeId = (int)$pdo->lastInsertId();
+            $poolTypeId = (int) $pdo->lastInsertId();
 
             $insertPool->execute([
-                ':name' => mb_substr((string)($record['name'] ?? $pool['name'] ?? 'Unknown Pool'), 0, 255),
+                ':name' => mb_substr((string) ($record['name'] ?? $pool['name'] ?? 'Unknown Pool'), 0, 255),
                 ':full_address' => $record['full_address'] ?? $pool['address'] ?? null,
                 ':primary_image_url' => $record['primary_image_url'] ?? $pool['primary_image_url'] ?? null,
                 ':website' => $record['website'] ?? $pool['url'] ?? null,
                 ':map_link' => $record['map_link'] ?? $pool['map_link'] ?? null,
                 ':phone' => $record['phone'] ?? $pool['phone'] ?? null,
                 ':pool_type_id' => $poolTypeId,
-                ':is_active' => isset($record['is_active']) ? (int)$record['is_active'] : (!empty($pool['is_active']) ? 1 : 0),
+                ':is_active' => isset($record['is_active']) ? (int) $record['is_active'] : (!empty($pool['is_active']) ? 1 : 0),
             ]);
-            $poolId = (int)$pdo->lastInsertId();
+            $poolId = (int) $pdo->lastInsertId();
 
             $insertPoolPoolType->execute([
                 ':pool_id' => $poolId,
@@ -334,7 +337,7 @@ function import_scraped_json(PDO $pdo, $outputJson)
                     continue;
                 }
 
-                $scheduleTypeName = trim((string)($schedule['activity_name'] ?? $schedule['activity'] ?? 'General'));
+                $scheduleTypeName = trim((string) ($schedule['activity_name'] ?? $schedule['activity'] ?? 'General'));
                 if ($scheduleTypeName === '') {
                     $scheduleTypeName = 'General';
                 }
@@ -344,10 +347,10 @@ function import_scraped_json(PDO $pdo, $outputJson)
                     ':name' => $scheduleTypeName,
                     ':description' => null,
                 ]);
-                $scheduleTypeId = (int)$pdo->lastInsertId();
+                $scheduleTypeId = (int) $pdo->lastInsertId();
 
-                $effectiveDate = (string)($schedule['effective_date_iso'] ?? date('Y-m-d'));
-                $endDate = (string)($schedule['end_date_iso'] ?? $effectiveDate);
+                $effectiveDate = (string) ($schedule['effective_date_iso'] ?? date('Y-m-d'));
+                $endDate = (string) ($schedule['end_date_iso'] ?? $effectiveDate);
 
                 $insertSchedule->execute([
                     ':pool_id' => $poolId,
@@ -355,7 +358,7 @@ function import_scraped_json(PDO $pdo, $outputJson)
                     ':effective_date' => $effectiveDate,
                     ':end_date' => $endDate,
                 ]);
-                $scheduleId = (int)$pdo->lastInsertId();
+                $scheduleId = (int) $pdo->lastInsertId();
 
                 $timeBlocks = $schedule['time_blocks'] ?? [];
                 if (!is_array($timeBlocks)) {
@@ -367,20 +370,20 @@ function import_scraped_json(PDO $pdo, $outputJson)
                         continue;
                     }
 
-                    $day = strtolower((string)($block['day_of_week'] ?? $block['day'] ?? ''));
+                    $day = strtolower((string) ($block['day_of_week'] ?? $block['day'] ?? ''));
                     if (!in_array($day, ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'], true)) {
                         continue;
                     }
 
-                    $startTime = (string)($block['start_time'] ?? $block['start'] ?? '00:00');
-                    $endTime = (string)($block['end_time'] ?? $block['end'] ?? $startTime);
+                    $startTime = (string) ($block['start_time'] ?? $block['start'] ?? '00:00');
+                    $endTime = (string) ($block['end_time'] ?? $block['end'] ?? $startTime);
 
                     $insertTimeBlock->execute([
                         ':schedule_id' => $scheduleId,
                         ':day_of_week' => $day,
                         ':start_time' => $startTime,
                         ':end_time' => $endTime,
-                        ':label' => isset($block['label']) ? mb_substr((string)$block['label'], 0, 100) : null,
+                        ':label' => isset($block['label']) ? mb_substr((string) $block['label'], 0, 100) : null,
                     ]);
                 }
             }
