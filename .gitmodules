@@ -1,3 +1,4 @@
 [submodule "scraper"]
 	path = scraper
 	url = https://github.com/Aoof/montreal-pools-scraper
+	branch = master
