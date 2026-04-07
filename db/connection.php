@@ -29,5 +29,3 @@ function db()
         exit(1);
     }
 }
-
-db();

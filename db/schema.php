@@ -54,16 +54,9 @@ $tables = [
         latt DOUBLE DEFAULT NULL,
         longt DOUBLE DEFAULT NULL,
         phone CHAR(12) DEFAULT NULL,
-        pool_type_id SMALLINT UNSIGNED NOT NULL,
         is_active TINYINT(1) NOT NULL DEFAULT 1,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id),
-        KEY idx_pools_type (pool_type_id),
-        CONSTRAINT fk_pools_pool_type
-            FOREIGN KEY (pool_type_id)
-            REFERENCES pool_types(id)
-            ON UPDATE CASCADE
-            ON DELETE RESTRICT
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     "CREATE TABLE IF NOT EXISTS pool_pool_types (
