@@ -1,5 +1,7 @@
 <?php
 
+namespace App\Backend\Models;
+
 class ScheduleType
 {
     private int $id;
@@ -28,3 +30,5 @@ class ScheduleType
         return $this->description;
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\ScheduleType', 'ScheduleType');

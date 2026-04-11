@@ -1,5 +1,8 @@
 <?php
 
+// Composer autoload for PSR-4 namespaces
+require_once __DIR__ . '/../vendor/autoload.php';
+
 // config global variables for easy file access (Frontend, PHP)
 require_once __DIR__ . '/../src/config/utils.php';
 

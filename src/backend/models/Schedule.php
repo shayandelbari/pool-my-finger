@@ -1,5 +1,9 @@
 <?php
 
+namespace App\Backend\Models;
+
+use DateTime;
+
 class Schedule
 {
     private int $id;
@@ -49,3 +53,5 @@ class Schedule
         return $this->createdAt;
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\Schedule', 'Schedule');

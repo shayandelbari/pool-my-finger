@@ -1,5 +1,9 @@
 <?php
 
+namespace App\Backend\Models;
+
+use DateTime;
+
 class Session
 {
     private int $id;
@@ -49,3 +53,5 @@ class Session
         return $this->revoked;
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\Session', 'Session');

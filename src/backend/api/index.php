@@ -11,6 +11,9 @@
  * public/index.php → src/backend/api/index.php (router) → controller → repository → database
  */
 
+// Initialize backend (config, database)
+require_once dirname(__DIR__) . '/bootstrap.php';
+
 // Parse the API path (done in public/index.php)
 $apiPath = defined("API_PATH") ? API_PATH : "";
 

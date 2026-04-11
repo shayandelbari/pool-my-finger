@@ -1,7 +1,11 @@
 <?php
-require_once dirname(__DIR__, 2) . '/config/utils.php';
-require_once MODELS_PATH . '/Pool.php';
-require_once DB_PATH . '/connection.php';
+
+namespace App\Backend\Repositories;
+
+use App\Backend\Models\Pool;
+use DateTime;
+use PDO;
+use PDOException;
 
 /**
  * Repository Layer - PoolRepository
@@ -24,7 +28,7 @@ class PoolRepository
         $array = [];
         try {
 
-            $conn = db();
+            $conn = \db();
             $sql = "SELECT ";
             $result = $conn->query($sql);
             $data = $result->fetchAll(PDO::FETCH_ASSOC);
@@ -56,7 +60,7 @@ class PoolRepository
     public function getPoolById(int $id): ?array
     {
         try {
-            $conn = db();
+            $conn = \db();
             $sql = "SELECT * FROM pools WHERE id = :id";
             $stmt = $conn->prepare($sql);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
@@ -69,3 +73,5 @@ class PoolRepository
         }
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\PoolRepository', 'PoolRepository');

@@ -1,5 +1,9 @@
 <?php
 
+namespace App\Backend\Models;
+
+use DateTime;
+
 class Pool
 {
     private int $id;
@@ -97,3 +101,5 @@ class Pool
         return $this->createdAt;
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\Pool', 'Pool');
