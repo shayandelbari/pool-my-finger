@@ -1,4 +1,8 @@
 <?php
+require_once dirname(__DIR__, 2) . '/config/utils.php';
+require_once MODELS_PATH . '/Pool.php';
+require_once DB_PATH . '/connection.php';
+
 /**
  * Repository Layer - PoolRepository
  *
@@ -35,8 +39,7 @@ class PoolRepository
                     $row['map_link'],
                     (float) $row['latt'],
                     (float) $row['longt'],
-                    (float) $row['phone'],
-                    $row['type'],
+                    $row['phone'] !== null ? (string) $row['phone'] : null,
                     (bool) $row['is_active'],
                     new DateTime($row['created_at'])
                 );
