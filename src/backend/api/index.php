@@ -1,4 +1,6 @@
 <?php
+use App\Backend\Controllers\AuthController;
+
 /**
  * API Router Layer
  *
@@ -10,6 +12,9 @@
  * Overall request flow:
  * public/index.php → src/backend/api/index.php (router) → controller → repository → database
  */
+
+// Initialize backend (config, database)
+require_once dirname(__DIR__) . '/bootstrap.php';
 
 // Parse the API path (done in public/index.php)
 $apiPath = defined("API_PATH") ? API_PATH : "";
@@ -31,6 +36,26 @@ switch ($apiPath) {
     case "users":
         // Hey Ed, placeholder for user management endpoints. Add UserController here.
         echo json_encode(["message" => "Users endpoint - not implemented yet"]);
+        break;
+
+    case "auth/login":
+        (new AuthController())->login();
+        break;
+
+    case "auth/validate":
+        (new AuthController())->validate();
+        break;
+
+    case "auth/logout":
+        (new AuthController())->logout();
+        break;
+
+    case "auth/logout-all":
+        (new AuthController())->logoutAll();
+        break;
+
+    case "auth/user":
+        (new AuthController())->getUserById();
         break;
 
     case "admin":

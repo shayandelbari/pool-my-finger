@@ -1,4 +1,13 @@
 <?php
+
+namespace App\Backend\Repositories;
+
+use App\Backend\Models\Pool;
+use App\Backend\Models\PoolType;
+use DateTime;
+use PDO;
+use PDOException;
+
 require_once __DIR__ . '/PoolTypeRepository.php';
 
 /**
@@ -20,7 +29,7 @@ class PoolRepository
     public static function getAllPools(): array
     {
         try {
-            $conn = db();
+            $conn = \db();
             $stmt = $conn->query(
                 "SELECT
                     id,
@@ -49,7 +58,7 @@ class PoolRepository
     public static function getPoolById(int $id): ?Pool
     {
         try {
-            $conn = db();
+            $conn = \db();
             $stmt = $conn->prepare(
                 "SELECT
                     id,
@@ -85,7 +94,7 @@ class PoolRepository
 
     public static function createPool(Pool $pool): int
     {
-        $conn = db();
+        $conn = \db();
 
         try {
             $conn->beginTransaction();
@@ -143,7 +152,7 @@ class PoolRepository
 
     public static function updatePool(Pool $pool): bool
     {
-        $conn = db();
+        $conn = \db();
 
         if (!self::poolExists($conn, $pool->getId())) {
             return false;
@@ -195,7 +204,7 @@ class PoolRepository
 
     public static function deletePool(int $id): bool
     {
-        $conn = db();
+        $conn = \db();
 
         if (!self::poolExists($conn, $id)) {
             return false;
@@ -337,3 +346,5 @@ class PoolRepository
         return (bool) $stmt->fetchColumn();
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\PoolRepository', 'PoolRepository');

@@ -1,5 +1,7 @@
 <?php
 
+namespace App\Backend\Models;
+
 class PoolType
 {
     private int $id;
@@ -28,3 +30,5 @@ class PoolType
         return $this->description;
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\PoolType', 'PoolType');

@@ -1,5 +1,9 @@
 <?php
 
+namespace App\Backend\Models;
+
+use DateTime;
+
 class User
 {
     private int $id;
@@ -35,3 +39,5 @@ class User
         return $this->createdAt;
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\User', 'User');

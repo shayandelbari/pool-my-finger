@@ -1,5 +1,7 @@
 <?php
 
+namespace App\Backend\Models;
+
 class TimeBlock
 {
     private int $id;
@@ -49,3 +51,5 @@ class TimeBlock
         return $this->label;
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\TimeBlock', 'TimeBlock');

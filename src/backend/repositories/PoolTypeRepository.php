@@ -1,5 +1,11 @@
 <?php
 
+namespace App\Backend\Repositories;
+
+use App\Backend\Models\PoolType;
+use PDO;
+use PDOException;
+
 class PoolTypeRepository
 {
     /**
@@ -8,7 +14,7 @@ class PoolTypeRepository
     public static function getAllTypes(): array
     {
         try {
-            $conn = db();
+            $conn = \db();
             $stmt = $conn->query(
                 "SELECT id, name, description
                  FROM pool_types
@@ -26,7 +32,7 @@ class PoolTypeRepository
     public static function getTypeById(int $id): ?PoolType
     {
         try {
-            $conn = db();
+            $conn = \db();
             $stmt = $conn->prepare(
                 "SELECT id, name, description
                  FROM pool_types
@@ -48,7 +54,7 @@ class PoolTypeRepository
 
     public static function createType(PoolType $type): int
     {
-        $conn = db();
+        $conn = \db();
         $stmt = $conn->prepare(
             "INSERT INTO pool_types (name, description)
              VALUES (:name, :description)"
@@ -63,7 +69,7 @@ class PoolTypeRepository
 
     public static function updateType(PoolType $type): bool
     {
-        $conn = db();
+        $conn = \db();
         $stmt = $conn->prepare(
             "UPDATE pool_types
              SET name = :name,
@@ -82,7 +88,7 @@ class PoolTypeRepository
 
     public static function deleteType(int $id): bool
     {
-        $conn = db();
+        $conn = \db();
         $stmt = $conn->prepare("DELETE FROM pool_types WHERE id = :id");
         $stmt->execute([':id' => $id]);
 
@@ -99,7 +105,7 @@ class PoolTypeRepository
             return [];
         }
 
-        $conn = db();
+        $conn = \db();
         $placeholders = implode(',', array_fill(0, count($poolIds), '?'));
         $stmt = $conn->prepare(
             "SELECT
@@ -136,3 +142,5 @@ class PoolTypeRepository
         );
     }
 }
+
+\class_alias(__NAMESPACE__ . '\\PoolTypeRepository', 'PoolTypeRepository');
