@@ -257,8 +257,8 @@ function import_scraped_json(PDO $pdo, $outputJson)
         );
 
         $insertPool = $pdo->prepare(
-              "INSERT INTO pools (name, full_address, primary_image_url, website, map_link, phone, is_active)
-               VALUES (:name, :full_address, :primary_image_url, :website, :map_link, :phone, :is_active)"
+            "INSERT INTO pools (name, full_address, primary_image_url, website, map_link, latt, longt, phone, is_active)
+             VALUES (:name, :full_address, :primary_image_url, :website, :map_link, :latt, :longt, :phone, :is_active)"
         );
 
         $insertPoolPoolType = $pdo->prepare(
@@ -330,6 +330,8 @@ function import_scraped_json(PDO $pdo, $outputJson)
                 ':primary_image_url' => $record['primary_image_url'] ?? $pool['primary_image_url'] ?? null,
                 ':website' => $record['website'] ?? $pool['url'] ?? null,
                 ':map_link' => $record['map_link'] ?? $pool['map_link'] ?? null,
+                ':latt' => isset($record['latt']) ? (float) $record['latt'] : (isset($pool['latitude']) ? (float) $pool['latitude'] : null),
+                ':longt' => isset($record['longt']) ? (float) $record['longt'] : (isset($pool['longitude']) ? (float) $pool['longitude'] : null),
                 ':phone' => $record['phone'] ?? $pool['phone'] ?? null,
                 ':is_active' => isset($record['is_active']) ? (int) $record['is_active'] : (!empty($pool['is_active']) ? 1 : 0),
             ]);
