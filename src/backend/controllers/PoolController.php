@@ -4,6 +4,7 @@ namespace App\Backend\Controllers;
 
 use App\Backend\Models\Pool;
 use App\Backend\Models\PoolType;
+use App\Backend\Repositories\PoolTypeRepository;
 use App\Backend\Services\PoolService;
 use DateTimeInterface;
 use InvalidArgumentException;
@@ -11,6 +12,26 @@ use RuntimeException;
 
 class PoolController
 {
+    public function indexTypes(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            return;
+        }
+
+        $types = PoolTypeRepository::getAllTypes();
+        $this->jsonResponse([
+            'types' => array_map(
+                fn(PoolType $type): array => [
+                    'id' => $type->getId(),
+                    'name' => $type->getName(),
+                    'description' => $type->getDescription(),
+                ],
+                $types
+            ),
+        ]);
+    }
+
     // Controller layer: this endpoint only handles HTTP concerns and delegates pool listing to the service.
     public function index(): void
     {

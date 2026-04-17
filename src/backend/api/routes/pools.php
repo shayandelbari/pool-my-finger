@@ -2,6 +2,17 @@
 
 $method = $_SERVER['REQUEST_METHOD'] ?? '';
 $poolId = null;
+
+if ($apiPath === 'pool-types') {
+    if ($method === 'GET') {
+        $poolController->indexTypes();
+        return;
+    }
+
+    methodNotAllowed();
+    return;
+}
+
 if (preg_match('/^pools\/(\d+)$/', $apiPath, $matches) === 1) {
     $poolId = (int) $matches[1];
 }
