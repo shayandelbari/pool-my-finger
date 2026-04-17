@@ -14,6 +14,7 @@ class AuthController
 {
     private const SESSION_COOKIE_NAME = 'pool_my_finger_session';
 
+    // Controller layer: this method only translates the HTTP login request into a service call and formats the response.
     public function login(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -43,6 +44,7 @@ class AuthController
         }
     }
 
+    // Controller layer: validation is an endpoint concern because it reads transport state and returns an HTTP response.
     public function validate(): void
     {
         $token = $this->resolveToken();
@@ -59,6 +61,7 @@ class AuthController
         }
     }
 
+    // Controller layer: logout is HTTP orchestration only; the service owns the revocation rule itself.
     public function logout(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -82,6 +85,7 @@ class AuthController
         $this->jsonResponse(['ok' => true]);
     }
 
+    // Controller layer: bulk logout is still an endpoint wrapper around a service-level user-session action.
     public function logoutAll(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -105,6 +109,7 @@ class AuthController
         }
     }
 
+    // Controller layer: this endpoint returns the current authenticated user, so it belongs here as transport handling.
     public function getUserById(): void
     {
         $token = $this->resolveToken();
@@ -122,6 +127,7 @@ class AuthController
         }
     }
 
+    // Controller helper: cookie access is HTTP transport logic, so it stays out of services.
     private function resolveToken(): ?string
     {
         $cookie = $_COOKIE[self::SESSION_COOKIE_NAME] ?? null;
@@ -133,6 +139,7 @@ class AuthController
         return trim($cookie);
     }
 
+    // Controller helper: body parsing is request-shaping logic, not business logic.
     /**
      * @return array<string, mixed>
      */
@@ -147,6 +154,7 @@ class AuthController
         return is_array($decoded) ? $decoded : $_POST;
     }
 
+    // Controller helper: response shaping is an endpoint responsibility because services should not know response format.
     /**
      * @return array<string, mixed>
      */
@@ -159,6 +167,7 @@ class AuthController
         ];
     }
 
+    // Controller helper: session shaping is response formatting, which belongs in the controller layer.
     /**
      * @return array<string, mixed>
      */
@@ -172,6 +181,7 @@ class AuthController
         ];
     }
 
+    // Controller helper: HTTP status/header emission belongs here because only controllers should speak HTTP directly.
     /**
      * @param array<string, mixed> $payload
      */
@@ -182,6 +192,7 @@ class AuthController
         echo json_encode($payload);
     }
 
+    // Controller helper: cookie mutation is transport/state management, so it stays in the controller.
     private function setSessionCookie(string $token, DateTimeInterface $expiresAt): void
     {
         setcookie(self::SESSION_COOKIE_NAME, $token, [
@@ -193,6 +204,7 @@ class AuthController
         ]);
     }
 
+    // Controller helper: clearing the cookie is endpoint cleanup, not application logic.
     private function clearSessionCookie(): void
     {
         setcookie(self::SESSION_COOKIE_NAME, '', [
@@ -204,6 +216,7 @@ class AuthController
         ]);
     }
 
+    // Controller helper: protocol detection is needed for cookie flags and is still an HTTP-layer concern.
     private function isHttpsRequest(): bool
     {
         if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
