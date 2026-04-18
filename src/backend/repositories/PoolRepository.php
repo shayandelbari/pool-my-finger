@@ -79,6 +79,7 @@ class PoolRepository
     {
         try {
             $conn = db();
+            //Q : there is no created_at value nor parameter for pools
             $sql = "INSERT INTO pools (name, full_address, primary_image_url, website, map_link, latt, longt, phone, type, is_active) VALUES (:name, :full_address, :primary_image_url, :website, :map_link, :latt, :longt, :phone, :type, :is_active)";
             $stmt = $conn->prepare($sql);
             $stmt->bindParam(':name', $newPool->getName());
@@ -110,6 +111,7 @@ class PoolRepository
     {
         try {
             $conn = db(); 
+                        //Q : there is no created_at value nor parameter for pools
             $sqlQuery = "UPDATE pools SET (:name, :full_address, :primary_image_url, :website, :map_link, :latt, :longt, :phone, :type, :is_active) WHERE id = :oldId";
 
             $stmt = $conn->prepare($sql);
@@ -133,6 +135,33 @@ class PoolRepository
 
     //method to deactive and activate the is_active field
 
+    public function toggleIsActive(Pool $poolId, bool $status): void {
+        try {
+            $conn = db();
+            $sql = "UPDATE schedules SET is_active = :status";
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':status', $status, PDO::PARAM_BOOL);
+            $stmt->execute();
+        } catch(PDOException $e) {
+            error_log("Database error: ".$e->getMessage());
+        }
+    }
+
+    public function deletePool(int $poolId): bool
+    {
+        try {
+            $conn = db();
+            $sql = "DELETE FROM pools WHERE id = :id";
+            $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':id', $poolId);
+            $stmt->execute();
+            return true;
+
+        } catch(PDOException $e) {
+            error_log("Database error: ".$e->getMessage());
+            return false;
+        }
+    }
 }
 
 \class_alias(__NAMESPACE__ . '\\PoolRepository', 'PoolRepository');
