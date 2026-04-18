@@ -135,11 +135,12 @@ class PoolRepository
 
     //method to deactive and activate the is_active field
 
-    public function toggleIsActive(Pool $poolId, bool $status): void {
+    public function toggleIsActive(int $pool_id, bool $status): void {
         try {
             $conn = db();
-            $sql = "UPDATE schedules SET is_active = :status";
+            $sql = "UPDATE schedules SET is_active = :status WHERE id = :pool_id";
             $stmt = $conn->prepare($sql);
+            $stmt->bindParam(':pool_id', $pool_id);
             $stmt->bindParam(':status', $status, PDO::PARAM_BOOL);
             $stmt->execute();
         } catch(PDOException $e) {
