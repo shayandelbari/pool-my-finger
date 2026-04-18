@@ -13,6 +13,7 @@ class ScheduleRepository {
   public function getAllSchedules(): array
     {
         $array = [];
+        $counter = 0;
         try {
 
             $conn = \db();
@@ -29,7 +30,7 @@ class ScheduleRepository {
                     $row['end_date'],
                     new DateTime($row['created_at'])
                 );
-                $array[] = $schedule;
+                $array[$counter++] = $schedule;
             }
 
             return $array;
@@ -46,8 +47,19 @@ class ScheduleRepository {
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':id', $id, PDO::PARAM_INT);
       $stmt->execute();
-      $schedule = $stmt->fetch(PDO::FETCH_ASSOC);
-      return $schedule ?: null;
+      $scheduleArr = $stmt->fetch(PDO::FETCH_ASSOC); //array is the schedule
+
+      if ($scheduleArr !== false) {
+        return new Schedule(
+          $scheduleArr['id'],
+          $scheduleArr['pool_id'],
+          $scheduleArr['schedule_type_id'],
+          $scheduleArr['effective_date'],
+          $scheduleArr['end_date'],
+          new DateTime($scheduleArr['created_at'])
+        );
+      }
+      return null;
     } catch (PDOException $e) {
       error_log("Database error: " . $e->getMessage());
       return null;
@@ -85,7 +97,7 @@ class ScheduleRepository {
   {
     try {
       $conn = db();
-      $sql = "UPDATE schedules SET (:id, :pool_id, :schedule_type, :effective_date, :endDate, :created_at) WHERE id = :oldId";
+      $sql = "UPDATE schedules SET id = :id, pool_id = :pool_id, schedule_type_id = :schedule_type_id, effective_date = :effective_date, end_date = :end_date, created_at = :created_at WHERE id = :oldId";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':id', $newSchedule->getId());
       $stmt->bindParam(':pool_id', $newSchedule->getPoolId());
@@ -94,20 +106,22 @@ class ScheduleRepository {
       $stmt->bindParam(':endDate', $newSchedule->getEndDate());
       $stmt->execute();
 
+      return $this->getScheduleById($oldId);
+
     } catch (PDOException $e) {
       error_log("Database error: ". $e->getMessage());
       return null;
     }
   }
 
-  public function deleteSchedule(int $scheduleId): bool {
+  public function deleteSchedule(int $scheduleId): bool 
+  {
     try {
       $conn = db();
       $sql = "DELETE FROM schedules WHERE id = :id";
-      $stmt = $conn->prepare(sql);
+      $stmt = $conn->prepare($sql);
       $stmt->bindParam(':id', $scheduleId);
-      $stmt->execute();
-      return true;
+      return $stmt->execute();
     }
     catch (PDOException $e) {
       error_log("Database error: ".$e->getMessage());
