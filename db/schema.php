@@ -56,7 +56,7 @@ $tables = [
         phone CHAR(12) DEFAULT NULL,
         is_active TINYINT(1) NOT NULL DEFAULT 1,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id),
+        PRIMARY KEY (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
 
     "CREATE TABLE IF NOT EXISTS pool_pool_types (
@@ -257,8 +257,8 @@ function import_scraped_json(PDO $pdo, $outputJson)
         );
 
         $insertPool = $pdo->prepare(
-            "INSERT INTO pools (name, full_address, primary_image_url, website, map_link, phone, pool_type_id, is_active)
-             VALUES (:name, :full_address, :primary_image_url, :website, :map_link, :phone, :pool_type_id, :is_active)"
+            "INSERT INTO pools (name, full_address, primary_image_url, website, map_link, latt, longt, phone, is_active)
+             VALUES (:name, :full_address, :primary_image_url, :website, :map_link, :latt, :longt, :phone, :is_active)"
         );
 
         $insertPoolPoolType = $pdo->prepare(
@@ -291,17 +291,38 @@ function import_scraped_json(PDO $pdo, $outputJson)
 
             $record = (isset($pool['db_record']) && is_array($pool['db_record'])) ? $pool['db_record'] : $pool;
 
-            $poolTypeName = trim((string) ($record['pool_type_name'] ?? $pool['pool_type_name'] ?? $pool['pool_type'] ?? 'Unknown'));
-            if ($poolTypeName === '') {
-                $poolTypeName = 'Unknown';
-            }
-            $poolTypeName = mb_substr($poolTypeName, 0, 50);
+            $poolTypeNames = [];
+            if (isset($record['pool_type_names']) && is_array($record['pool_type_names'])) {
+                foreach ($record['pool_type_names'] as $name) {
+                    if (!is_string($name)) {
+                        continue;
+                    }
 
-            $insertPoolType->execute([
-                ':name' => $poolTypeName,
-                ':description' => $record['pool_type_description'] ?? (string) ($pool['pool_type'] ?? null),
-            ]);
-            $poolTypeId = (int) $pdo->lastInsertId();
+                    $normalized = mb_substr(trim($name), 0, 50);
+                    if ($normalized !== '') {
+                        $poolTypeNames[] = $normalized;
+                    }
+                }
+            }
+
+            if ($poolTypeNames === []) {
+                $fallbackTypeName = trim((string) ($record['pool_type_name'] ?? $pool['pool_type_name'] ?? $pool['pool_type'] ?? 'Unknown'));
+                if ($fallbackTypeName === '') {
+                    $fallbackTypeName = 'Unknown';
+                }
+                $poolTypeNames[] = mb_substr($fallbackTypeName, 0, 50);
+            }
+
+            $poolTypeNames = array_values(array_unique($poolTypeNames));
+
+            $poolTypeIds = [];
+            foreach ($poolTypeNames as $poolTypeName) {
+                $insertPoolType->execute([
+                    ':name' => $poolTypeName,
+                    ':description' => $record['pool_type_description'] ?? (string) ($pool['pool_type'] ?? null),
+                ]);
+                $poolTypeIds[] = (int) $pdo->lastInsertId();
+            }
 
             $insertPool->execute([
                 ':name' => mb_substr((string) ($record['name'] ?? $pool['name'] ?? 'Unknown Pool'), 0, 255),
@@ -309,16 +330,19 @@ function import_scraped_json(PDO $pdo, $outputJson)
                 ':primary_image_url' => $record['primary_image_url'] ?? $pool['primary_image_url'] ?? null,
                 ':website' => $record['website'] ?? $pool['url'] ?? null,
                 ':map_link' => $record['map_link'] ?? $pool['map_link'] ?? null,
+                ':latt' => isset($record['latt']) ? (float) $record['latt'] : (isset($pool['latitude']) ? (float) $pool['latitude'] : null),
+                ':longt' => isset($record['longt']) ? (float) $record['longt'] : (isset($pool['longitude']) ? (float) $pool['longitude'] : null),
                 ':phone' => $record['phone'] ?? $pool['phone'] ?? null,
-                ':pool_type_id' => $poolTypeId,
                 ':is_active' => isset($record['is_active']) ? (int) $record['is_active'] : (!empty($pool['is_active']) ? 1 : 0),
             ]);
             $poolId = (int) $pdo->lastInsertId();
 
-            $insertPoolPoolType->execute([
-                ':pool_id' => $poolId,
-                ':pool_type_id' => $poolTypeId,
-            ]);
+            foreach ($poolTypeIds as $poolTypeId) {
+                $insertPoolPoolType->execute([
+                    ':pool_id' => $poolId,
+                    ':pool_type_id' => $poolTypeId,
+                ]);
+            }
 
             $schedules = $record['schedules'] ?? $pool['schedules'] ?? [];
             if (!is_array($schedules)) {

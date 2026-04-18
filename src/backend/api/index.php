@@ -1,71 +1,69 @@
 <?php
 use App\Backend\Controllers\AuthController;
+use App\Backend\Controllers\PoolController;
+use App\Backend\Services\Exceptions\SessionValidationException;
+use App\Backend\Services\SessionService;
 
-/**
- * API Router Layer
- *
- * Hey Ed, this file acts as the API router for our backend.
- * It receives requests from the /api endpoint and determines which controller should handle the request.
- * This file should contain ONLY routing logic, not business logic or SQL.
- * It calls methods in the controllers to process the request.
- *
- * Overall request flow:
- * public/index.php → src/backend/api/index.php (router) → controller → repository → database
- */
-
-// Initialize backend (config, database)
 require_once dirname(__DIR__) . '/bootstrap.php';
 
-// Parse the API path (done in public/index.php)
 $apiPath = defined("API_PATH") ? API_PATH : "";
 
-// Placeholder for routing logic
+$authController = new AuthController();
+$poolController = new PoolController();
+
+/**
+ * @param array<string, mixed> $payload
+ */
+function jsonResponse(array $payload, int $statusCode = 200): void
+{
+    http_response_code($statusCode);
+    header('Content-Type: application/json');
+    echo json_encode($payload);
+}
+
+function methodNotAllowed(): void
+{
+    jsonResponse(["error" => "Method not allowed."], 405);
+}
+
+function requireAuthentication(): bool
+{
+    $token = $_COOKIE['pool_my_finger_session'] ?? null;
+    if (!is_string($token) || trim($token) === '') {
+        jsonResponse(["error" => "Missing session cookie."], 401);
+        return false;
+    }
+
+    try {
+        SessionService::validateSessionToken(trim($token));
+        return true;
+    } catch (SessionValidationException $e) {
+        jsonResponse(["error" => "Session invalid."], 401);
+        return false;
+    }
+}
+
 switch ($apiPath) {
     case "":
-        // Handle /api root
-        // Hey Ed, this is the API root endpoint. You might return API documentation or version info here.
-        echo json_encode(["message" => "API root"]);
-        break;
-
-    case "pools":
-        // Hey Ed, route to PoolController for pool-related endpoints.
-        // Example: require_once '../controllers/PoolController.php'; $controller = new PoolController(); $controller->handleRequest();
-        echo json_encode(["message" => "Pools endpoint - not implemented yet"]);
-        break;
-
-    case "users":
-        // Hey Ed, placeholder for user management endpoints. Add UserController here.
-        echo json_encode(["message" => "Users endpoint - not implemented yet"]);
-        break;
-
-    case "auth/login":
-        (new AuthController())->login();
-        break;
-
-    case "auth/validate":
-        (new AuthController())->validate();
-        break;
-
-    case "auth/logout":
-        (new AuthController())->logout();
-        break;
-
-    case "auth/logout-all":
-        (new AuthController())->logoutAll();
-        break;
-
-    case "auth/user":
-        (new AuthController())->getUserById();
-        break;
-
-    case "admin":
-        // Hey Ed, placeholder for admin endpoints. Add AdminController here.
-        echo json_encode(["message" => "Admin endpoint - not implemented yet"]);
+        jsonResponse(["message" => "API root"]);
         break;
 
     default:
-        // Hey Ed, unknown API endpoint. Return 404.
-        http_response_code(404);
-        echo json_encode(["error" => "API endpoint not found"]);
+        if (str_starts_with($apiPath, 'auth/')) {
+            require __DIR__ . '/routes/auth.php';
+            break;
+        }
+
+        if (str_starts_with($apiPath, 'pool') || str_starts_with($apiPath, 'pools')) {
+            require __DIR__ . '/routes/pools.php';
+            break;
+        }
+
+        if (str_starts_with($apiPath, 'schedule') || str_starts_with($apiPath, 'schedules')) {
+            require __DIR__ . '/routes/schedules.php';
+            break;
+        }
+
+        jsonResponse(["error" => "API endpoint not found"], 404);
         break;
 }
