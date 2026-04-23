@@ -2,8 +2,8 @@
 
 $state = $_POST['state'] ?? 'closed';
 
-// If currently closed → open it
-if ($state === "closed") {
+// If open then show menu
+if ($state === "open") {
     echo '<div>
             <label>
                 <input type="checkbox" name="menu_choice" value="adult">
@@ -17,6 +17,6 @@ if ($state === "closed") {
         </div>'
     ;
 } else {
-    // If open → return empty (hide menu)
+    // If closed → return empty (hide menu)
     echo '';
 }

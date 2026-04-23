@@ -61,6 +61,11 @@ if (str_starts_with($path, "/api")) {
  |------------------------------------------------------------
 */
 
+if ($path === "/filter") {
+    require __DIR__ . "/../src/frontend/components/filter.php";
+    return;
+}
+
 if (isset($routes[$path])) {
     require __DIR__ . "/../src/frontend/pages/" . $routes[$path];
     return;
