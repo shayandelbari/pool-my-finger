@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+
+
+
 @layer base {
   *,
   ::after,
@@ -124,3 +127,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+.button-container {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+}
+

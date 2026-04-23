@@ -1,2 +1,1 @@
-
-<a href = "<?= BASE_URL.'/login'?>" >Admin Login</a>
+<a href="<?= BASE_URL . '/login' ?>">Admin Login</a>

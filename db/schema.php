@@ -107,8 +107,8 @@ $tables = [
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         schedule_id BIGINT UNSIGNED NOT NULL,
         day_of_week ENUM(
-            'sunday','monday','tuesday',
-            'wednesday','thursday','friday','saturday'
+            'Sunday','Monday','Tuesday',
+            'Wednesday','Thursday','Friday','Saturday'
         ) NOT NULL,
         start_time TIME NOT NULL,
         end_time TIME NOT NULL,
