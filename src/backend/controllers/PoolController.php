@@ -40,10 +40,14 @@ class PoolController
             return;
         }
 
-        $pools = PoolService::getAllPools();
-        $this->jsonResponse([
-            'pools' => array_map(fn(Pool $pool): array => $this->formatPool($pool), $pools),
-        ]);
+        try {
+            $pools = PoolService::getAllPools($this->readPoolFilters());
+            $this->jsonResponse([
+                'pools' => array_map(fn(Pool $pool): array => $this->formatPool($pool), $pools),
+            ]);
+        } catch (InvalidArgumentException $e) {
+            $this->jsonResponse(['error' => $e->getMessage()], 400);
+        }
     }
 
     // Controller layer: ID parsing and response status mapping are transport responsibilities.
@@ -143,6 +147,53 @@ class PoolController
 
         $decoded = json_decode($raw, true);
         return is_array($decoded) ? $decoded : $_POST;
+    }
+
+    /**
+     * @return array{name?: string, types?: string[]}
+     */
+    private function readPoolFilters(): array
+    {
+        $filters = [];
+
+        if (array_key_exists('name', $_GET)) {
+            $rawName = $_GET['name'];
+            if (!is_string($rawName)) {
+                throw new InvalidArgumentException('name filter must be a string.');
+            }
+
+            $name = trim($rawName);
+            if ($name !== '') {
+                $filters['name'] = $name;
+            }
+        }
+
+        if (array_key_exists('type', $_GET)) {
+            $rawType = $_GET['type'];
+            if (!is_string($rawType)) {
+                throw new InvalidArgumentException('type filter must be a comma-separated string.');
+            }
+
+            $rawType = trim($rawType);
+            if ($rawType === '') {
+                throw new InvalidArgumentException('type filter cannot be empty when provided.');
+            }
+
+            $parts = explode(',', $rawType);
+            $types = [];
+            foreach ($parts as $part) {
+                $typeName = trim($part);
+                if ($typeName === '') {
+                    throw new InvalidArgumentException('type filter contains an empty value.');
+                }
+
+                $types[] = $typeName;
+            }
+
+            $filters['types'] = $types;
+        }
+
+        return $filters;
     }
 
     // Controller helper: response shaping is a transport concern and should stay out of services.
