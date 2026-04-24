@@ -18,8 +18,6 @@ $filterMenu = false;
 
 <script>
     let mainFilterOpen = false;
-    let adultFilterOpen = false;
-    let allAgesFilterOpen = false;
 
 
     function toggleMainFilter() {
@@ -37,35 +35,6 @@ $filterMenu = false;
             });
     }
 
-    function toggleAdultFilter() {
-        adultFilterOpen = !adultFilterOpen;
-        fetch('<?php echo BASE_URL; ?>/filter', {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: "state=" + (adultFilterOpen ? "open" : "closed")
-        })
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById("menuContainerAdult").innerHTML = html;
-            });
-    }
-
-    function toggleAllAgesFilter() {
-        allAgesFilterOpen = !allAgesFilterOpen;
-        fetch('<?php echo BASE_URL; ?>/filter', {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded"
-            },
-            body: "state=" + (allAgesFilterOpen ? "open" : "closed")
-        })
-            .then(res => res.text())
-            .then(html => {
-                document.getElementById("menuContainerAllAges").innerHTML = html;
-            });
-    }
 
     function setPlaceholder(value) {
         document.querySelector('input[name="search_bar"]').placeholder = value;
