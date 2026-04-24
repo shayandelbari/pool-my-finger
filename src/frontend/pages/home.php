@@ -42,8 +42,6 @@ $filterMenu = false;
 
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelector('button[name="filter"]').addEventListener('click', toggleMainFilter);
-        document.querySelector('input[name="filter_adult"]').addEventListener('change', toggleAdultFilter);
-        document.querySelector('input[name="filter_all_ages"]').addEventListener('change', toggleAllAgesFilter);
     });
 </script>
 
