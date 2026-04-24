@@ -6,17 +6,17 @@ $state = $_POST['state'] ?? 'closed';
 if ($state === "open") {
     echo '<div>
             <label>
-                <input type="checkbox" name="menu_choice" value="adult">
+                <input type="checkbox" name="filter_adult" value="adult">
                 Adult
             </label><br>
 
             <label>
-                <input type="checkbox" name="menu_choice" value="all">
+                <input type="checkbox" name="filter_all_ages" value="all">
                 All Ages
             </label>
         </div>'
     ;
 } else {
-    // If closed → return empty (hide menu)
+    // If closed then return empty which should hide menue
     echo '';
 }

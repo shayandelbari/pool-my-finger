@@ -8,6 +8,7 @@
     </div>
     <div>
         <h3> <?php echo getAddress($pool) ?> </h3>
+
         <!--  TODO - look into how addresses are being stored.
         <h3> <?php echo getCity($pool) ?>, <?php echo getProvince($pool) ?> </h3>
         <h3>
