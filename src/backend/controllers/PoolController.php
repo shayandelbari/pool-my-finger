@@ -12,15 +12,15 @@ use RuntimeException;
 
 class PoolController
 {
-    public function indexTypes(): void
+    public static function indexTypes(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
         $types = PoolTypeRepository::getAllTypes();
-        $this->jsonResponse([
+        self::jsonResponse([
             'types' => array_map(
                 fn(PoolType $type): array => [
                     'id' => $type->getId(),
@@ -33,104 +33,104 @@ class PoolController
     }
 
     // Controller layer: this endpoint only handles HTTP concerns and delegates pool listing to the service.
-    public function index(): void
+    public static function index(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
         try {
-            $pools = PoolService::getAllPools($this->readPoolFilters());
-            $this->jsonResponse([
-                'pools' => array_map(fn(Pool $pool): array => $this->formatPool($pool), $pools),
+            $pools = PoolService::getAllPools(self::readPoolFilters());
+            self::jsonResponse([
+                'pools' => array_map(fn(Pool $pool): array => self::formatPool($pool), $pools),
             ]);
         } catch (InvalidArgumentException $e) {
-            $this->jsonResponse(['error' => $e->getMessage()], 400);
+            self::jsonResponse(['error' => $e->getMessage()], 400);
         }
     }
 
     // Controller layer: ID parsing and response status mapping are transport responsibilities.
-    public function show(int $id): void
+    public static function show(int $id): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
         try {
             $pool = PoolService::getPoolById($id);
             if ($pool === null) {
-                $this->jsonResponse(['error' => 'Pool not found.'], 404);
+                self::jsonResponse(['error' => 'Pool not found.'], 404);
                 return;
             }
 
-            $this->jsonResponse($this->formatPool($pool));
+            self::jsonResponse(self::formatPool($pool));
         } catch (InvalidArgumentException $e) {
-            $this->jsonResponse(['error' => $e->getMessage()], 400);
+            self::jsonResponse(['error' => $e->getMessage()], 400);
         }
     }
 
     // Controller layer: request payload extraction is an HTTP concern; service handles domain validation.
-    public function store(): void
+    public static function store(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
         try {
-            $pool = PoolService::createPool($this->readJsonBody());
-            $this->jsonResponse($this->formatPool($pool), 201);
+            $pool = PoolService::createPool(self::readJsonBody());
+            self::jsonResponse(self::formatPool($pool), 201);
         } catch (InvalidArgumentException $e) {
-            $this->jsonResponse(['error' => $e->getMessage()], 400);
+            self::jsonResponse(['error' => $e->getMessage()], 400);
         } catch (RuntimeException $e) {
-            $this->jsonResponse(['error' => 'Failed to create pool.'], 500);
+            self::jsonResponse(['error' => 'Failed to create pool.'], 500);
         }
     }
 
     // Controller layer: maps HTTP method/status while delegating update business logic to service.
-    public function update(int $id): void
+    public static function update(int $id): void
     {
         $method = $_SERVER['REQUEST_METHOD'] ?? '';
         if ($method !== 'PUT' && $method !== 'PATCH') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
         try {
-            $pool = PoolService::updatePool($id, $this->readJsonBody());
+            $pool = PoolService::updatePool($id, self::readJsonBody());
             if ($pool === null) {
-                $this->jsonResponse(['error' => 'Pool not found.'], 404);
+                self::jsonResponse(['error' => 'Pool not found.'], 404);
                 return;
             }
 
-            $this->jsonResponse($this->formatPool($pool));
+            self::jsonResponse(self::formatPool($pool));
         } catch (InvalidArgumentException $e) {
-            $this->jsonResponse(['error' => $e->getMessage()], 400);
+            self::jsonResponse(['error' => $e->getMessage()], 400);
         } catch (RuntimeException $e) {
-            $this->jsonResponse(['error' => 'Failed to update pool.'], 500);
+            self::jsonResponse(['error' => 'Failed to update pool.'], 500);
         }
     }
 
     // Controller layer: delete endpoint status mapping belongs to transport handling.
-    public function destroy(int $id): void
+    public static function destroy(int $id): void
     {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'DELETE') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
         try {
             $deleted = PoolService::deletePool($id);
             if (!$deleted) {
-                $this->jsonResponse(['error' => 'Pool not found.'], 404);
+                self::jsonResponse(['error' => 'Pool not found.'], 404);
                 return;
             }
 
-            $this->jsonResponse(['ok' => true]);
+            self::jsonResponse(['ok' => true]);
         } catch (InvalidArgumentException $e) {
-            $this->jsonResponse(['error' => $e->getMessage()], 400);
+            self::jsonResponse(['error' => $e->getMessage()], 400);
         }
     }
 
@@ -138,7 +138,7 @@ class PoolController
     /**
      * @return array<string, mixed>
      */
-    private function readJsonBody(): array
+    private static function readJsonBody(): array
     {
         $raw = file_get_contents('php://input');
         if ($raw === false || trim($raw) === '') {
@@ -152,7 +152,7 @@ class PoolController
     /**
      * @return array{name?: string, types?: string[]}
      */
-    private function readPoolFilters(): array
+    private static function readPoolFilters(): array
     {
         $filters = [];
 
@@ -200,7 +200,7 @@ class PoolController
     /**
      * @return array<string, mixed>
      */
-    private function formatPool(Pool $pool): array
+    private static function formatPool(Pool $pool): array
     {
         return [
             'id' => $pool->getId(),
@@ -229,7 +229,7 @@ class PoolController
     /**
      * @param array<string, mixed> $payload
      */
-    private function jsonResponse(array $payload, int $statusCode = 200): void
+    private static function jsonResponse(array $payload, int $statusCode = 200): void
     {
         http_response_code($statusCode);
         header('Content-Type: application/json');

@@ -1,11 +1,13 @@
 <?php
 
+use App\Backend\Controllers\PoolController;
+
 $method = $_SERVER['REQUEST_METHOD'] ?? '';
 $poolId = null;
 
 if ($apiPath === 'pool-types') {
     if ($method === 'GET') {
-        $poolController->indexTypes();
+        PoolController::indexTypes();
         return;
     }
 
@@ -19,7 +21,7 @@ if (preg_match('/^pools\/(\d+)$/', $apiPath, $matches) === 1) {
 
 if ($apiPath === 'pools') {
     if ($method === 'GET') {
-        $poolController->index();
+        PoolController::index();
         return;
     }
 
@@ -28,7 +30,7 @@ if ($apiPath === 'pools') {
             return;
         }
 
-        $poolController->store();
+        PoolController::store();
         return;
     }
 
@@ -38,7 +40,7 @@ if ($apiPath === 'pools') {
 
 if ($poolId !== null) {
     if ($method === 'GET') {
-        $poolController->show($poolId);
+        PoolController::show($poolId);
         return;
     }
 
@@ -47,7 +49,7 @@ if ($poolId !== null) {
             return;
         }
 
-        $poolController->update($poolId);
+        PoolController::update($poolId);
         return;
     }
 
@@ -56,7 +58,7 @@ if ($poolId !== null) {
             return;
         }
 
-        $poolController->destroy($poolId);
+        PoolController::destroy($poolId);
         return;
     }
 

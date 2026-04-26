@@ -1,15 +1,10 @@
 <?php
-use App\Backend\Controllers\AuthController;
-use App\Backend\Controllers\PoolController;
 use App\Backend\Services\Exceptions\SessionValidationException;
 use App\Backend\Services\SessionService;
 
 require_once dirname(__DIR__) . '/bootstrap.php';
 
 $apiPath = defined("API_PATH") ? API_PATH : "";
-
-$authController = new AuthController();
-$poolController = new PoolController();
 
 /**
  * @param array<string, mixed> $payload
