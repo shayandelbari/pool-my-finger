@@ -7,16 +7,15 @@ use DateTime;
 use PDO;
 use PDOException;
 
-require_once '../models/Schedule.php';
+require_once '/../models/Schedule.php';
 
 class ScheduleRepository {
-  public function getAllSchedules(): array
+  public static function getAllSchedules(): array
     {
         $array = [];
         $counter = 0;
+        $conn = \db();
         try {
-
-            $conn = \db();
             $sql = "SELECT * FROM schedules";
             $result = $conn->query($sql);
             $data = $result->fetchAll(PDO::FETCH_ASSOC);
@@ -39,10 +38,10 @@ class ScheduleRepository {
             return [];
         }
     }
-  public function getScheduleById(int $id): ?Schedule 
+  public static function getScheduleById(int $id): ?Schedule 
   {
+    $conn = \db();
     try {
-      $conn = \db();
       $sql = "SELECT * FROM schedules WHERE id = :id";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':id', $id, PDO::PARAM_INT);
@@ -66,58 +65,105 @@ class ScheduleRepository {
     }
   }
 
-  public function createSchedule(Schedule $schedule): ?Schedule 
+  public static function createSchedule(Schedule $schedule): int
   {
+    $conn =  \db();
     try {
-      $conn =  \db(); //Q: what means the \db();
-      //Q: no schedule_id because it is auto incremented??
-      $sql = "INSERT INTO schedules (pool_id, schedule_type_id, effective_date, end_date, created_at) VALUES (:pool_id, :schedule_type_id, :effective_date, :end_date, :created_at)";
+      $conn->beginTransaction();  
+      $sql = "INSERT INTO schedules (schedule_type_id, effective_date, end_date, created_at) VALUES (:pool_id, :schedule_type_id, :effective_date, :end_date, :created_at)";
 
       $stmt = $conn->prepare($sql);
-      $stmt->bindParam(':pool_id', $schedule->getPool());
       $stmt->bindParam(':schedule_type_id', $schedule->getType());
       $stmt->bindParam(':effective_date', $schedule->getEffectiveDate());
       $stmt->bindParam(':end_date', $schedule->getEndDate());
       $stmt->bindParam(':created_at', $schedule->getCreatedAt()); //Q:not include it because of type DateTime?
       $stmt->execute();
+      $conn->commit();
 
       //get theid of the newly created schedule
-      $scheduleId = $conn->lastInsertId();
+      return (int) $conn->lastInsertId();
 
-      //get the pool created from the db
-      return $this->getScheduleById($scheduleId);
+      // //get the pool created from the db
+      // return $this->getScheduleById($scheduleId);
 
     } catch (PDOException $e) {
       error_log("Database error: " . $e->getMessage());
-      return null;
+      return -1;
     }
   }
 
-  public function updateSchedule(int $oldId, Schedule $newSchedule) :? Schedule
+  public static function updateSchedule(int $oldId, Schedule $newSchedule) : bool
   {
+    $conn = \db();
+
+    if (!self::scheduleExistsById($oldId)) {
+        error_log("Schedule with ID " .$oldId. " does not exist.");
+        return false; 
+    }
+    
     try {
-      $conn = db();
       $sql = "UPDATE schedules SET id = :id, pool_id = :pool_id, schedule_type_id = :schedule_type_id, effective_date = :effective_date, end_date = :end_date, created_at = :created_at WHERE id = :oldId";
       $stmt = $conn->prepare($sql);
-      $stmt->bindParam(':id', $newSchedule->getId());
-      $stmt->bindParam(':pool_id', $newSchedule->getPoolId());
-      $stmt->bindParam(':schedule_type', $newSchedule->getType());
+      $stmt->bindParam(':id', $oldId);
+      $stmt->bindParam(':pool_id', $newSchedule->getPool()->getId());
+      $stmt->bindParam(':schedule_type_id', $newSchedule->getType());
       $stmt->bindParam(':effective_date', $newSchedule->getEffectiveDate());
-      $stmt->bindParam(':endDate', $newSchedule->getEndDate());
+      $stmt->bindParam(':end_date', $newSchedule->getEndDate());
+      $stmt->bindParam(':created_at', $newSchedule->getCreatedAt());
       $stmt->execute();
 
-      return $this->getScheduleById($oldId);
+      return true;
 
     } catch (PDOException $e) {
       error_log("Database error: ". $e->getMessage());
-      return null;
+      return false;
     }
   }
 
-  public function deleteSchedule(int $scheduleId): bool 
+  private static function scheduleExistsById(int $id): bool
+  {
+      $conn = \db();
+      try {
+        $stmt = $conn->prepare("SELECT 1 FROM schedules WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $id]);
+        return (bool) $stmt->fetchColumn();
+      } catch (PDOException $e) {
+          error_log("Database error: " . $e->getMessage());
+          return false;
+      }
+  }
+  
+
+  public static function getScheduleIdByFields(int $poolId, int $scheduleTypeId, string $effectiveDate, string $endDate): int {
+    $conn = \db();
+    try {
+      $sql = "
+      SELECT id
+      FROM schedules
+      WHERE pool_id = :pool_id
+        AND schedule_type_id = :schedule_type_id
+        AND effective_date = :effective_date
+        AND end_date = :end_date
+      LIMIT 1";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([
+      ':pool_id' => $poolId,
+      ':schedule_type_id' => $scheduleTypeId,
+      ':effective_date' => $effectiveDate,
+      ':end_date' => $endDate,
+    ]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result ? (int) $result['id'] : null;
+    } catch (PDOException $e) {
+      error_log("Database error: ".$e->getMessage());
+      return -1;
+    }
+  }
+
+  public static function deleteSchedule(int $scheduleId): bool 
   {
     try {
-      $conn = db();
+      $conn = \db();
       $sql = "DELETE FROM schedules WHERE id = :id";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':id', $scheduleId);
@@ -128,8 +174,10 @@ class ScheduleRepository {
       return false;
     }
   }
+
 }
 
 
+\class_alias(__NAMESPACE__ . '\\ScheduleRepository', 'ScheduleRepository');
 
 

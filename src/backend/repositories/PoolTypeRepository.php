@@ -67,10 +67,11 @@ class PoolTypeRepository
         return (int) $conn->lastInsertId();
     }
 
-    public static function updateType(PoolType $type): bool
+    public static function updateType(int $id, PoolType $type): bool
     {
         $conn = \db();
-        $stmt = $conn->prepare(
+        try {
+            $stmt = $conn->prepare(
             "UPDATE pool_types
              SET name = :name,
                  description = :description
@@ -78,12 +79,16 @@ class PoolTypeRepository
         );
 
         $stmt->execute([
-            ':id' => $type->getId(),
+            ':id' => $id,
             ':name' => $type->getName(),
             ':description' => $type->getDescription(),
         ]);
 
         return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public static function deleteType(int $id): bool

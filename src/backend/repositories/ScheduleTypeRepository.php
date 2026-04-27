@@ -9,8 +9,8 @@ use PDOException;
 
 require_once '../models/ScheduleType.php';
 
-class ScheduleTypeRepositories {
-  public function getAllScheduleTypes(): array
+class ScheduleTypeRepository {
+  public static function getAllScheduleTypes(): array
   {
     $array = [];
     $counter = 0;
@@ -35,7 +35,7 @@ class ScheduleTypeRepositories {
     }
   }
 
-  public function getScheduleTypesById(int $id): ?ScheduleType
+  public static function getScheduleTypesById(int $id): ?ScheduleType
   {
     try {
       $conn = \db();
@@ -60,7 +60,7 @@ class ScheduleTypeRepositories {
     }
   } 
 
-  public function createScheduleType(ScheduleType $newSchedule): ?ScheduleType
+  public static function createScheduleType(ScheduleType $newSchedule): int
   {
     try {
       $conn = \db();
@@ -70,16 +70,15 @@ class ScheduleTypeRepositories {
       $stmt->bindParam(':description', $newSchedule->getDescription());
       $stmt->execute();
 
-      $scehduleId = $conn->lastInsertId();
-      return $this->getScheduleTypesById($scehduleId);
+      return $conn->lastInsertId(); 
 
     } catch (PDOException $e) {
       error_log("Database error: " . $e->getMessage());
-      return null;
+      return -1;
     }
   }
 
-  public function updateScheduleType(int $id, ScheduleType $updatedSchedule): ?ScheduleType
+  public static function updateScheduleType(int $id, ScheduleType $updatedSchedule): bool
   {
     try {
       $conn = \db();
@@ -90,15 +89,15 @@ class ScheduleTypeRepositories {
       $stmt->bindParam(':description', $updatedSchedule->getDescription());
       $stmt->execute();
 
-      return $this->getScheduleTypesById($id);
+      return $stmt->rowCount() > 0;
 
     } catch (PDOException $e) {
       error_log("Database error: " . $e->getMessage());
-      return null;
+      return false;
     }
   }
 
-  public function deleteScheduleType(int $id): bool
+  public static function deleteScheduleType(int $id): bool
   {
     try {
       $conn = \db();

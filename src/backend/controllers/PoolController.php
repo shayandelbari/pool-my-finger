@@ -32,7 +32,7 @@ class PoolController
         ]);
     }
 
-    // Controller layer: this endpoint only handles HTTP concerns and delegates pool listing to the service.
+    // Controller layer: this endpoint only handles HTTP concerns (METHODS) and delegates pool listing to the service.
     public function index(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {

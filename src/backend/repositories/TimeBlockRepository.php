@@ -10,7 +10,7 @@ use PDOException;
 require_once '../models/TimeBlock.php';
 
 class TimeBlockRepository { 
-  public function getAllTimeBlocks(): array
+  public static  function getAllTimeBlocks(): array
   {
     $array = [];
     $counter = 0;
@@ -38,7 +38,7 @@ class TimeBlockRepository {
     }
   }
 
-  public function getTimeBlockById(int $id): ?getTimeBlock 
+  public static function getTimeBlockById(int $id): ?TimeBlock
   {
     try {
       $conn = \db();
@@ -65,53 +65,66 @@ class TimeBlockRepository {
     }
   }
 
-  public function createTimeBlock(TimeBlock $newTimeBlock): ?TimeBlock
+  public static function createTimeBlock(TimeBlock $newTimeBlock): int
   {
-    try {
       $conn = \db();
-      $sql = "INSERT INTO time_blocks (schedule_id, day_of_week, start_time, end_time, label) VALUES (:schedule_id, :day_of_week, :start_time, :end_time, :label)";
+    try {
+      $conn->beginTransaction();
+      $sql = "INSERT INTO time_blocks (day_of_week, start_time, end_time, label) VALUES (:day_of_week, :start_time, :end_time, :label)";
       $stmt = $conn->prepare($sql);
-      $stmt->bindParam(':schedule_id', $newTimeBlock->getSchedule());
       $stmt->bindParam(':day_of_week', $newTimeBlock->getDay());
       $stmt->bindParam(':start_time', $newTimeBlock->getStart());
       $stmt->bindParam(':end_time', $newTimeBlock->getEnd());
       $stmt->bindParam(':label', $newTimeBlock->getLabel());
       $stmt->execute();
+      $conn->commit();
+      return  (int) $conn->lastInsertId();
 
-      $timeBlockId = $conn->lastInsertedId();
-
-      return $this->getTimeBlockById($timeBlockId);
       } catch (PDOException $e) {
        error_log("Database error: " . $e->getMessage());
-       return null; 
+       return -1; 
      }
   }
 
-  public function updateTimeBlock(int $oldId, TimeBlock $timeBlock): ?TimeBlock
+  public static function updateTimeBlock(int $oldId, TimeBlock $timeBlock): bool
   {
+    $conn = \db();
+
+    if (!self::timeBlockExists($conn, $oldId)) {
+        error_log("Time block with ID " .$oldId. " does not exist.");
+        return false; 
+    }
+
     try {
-      $conn = \db();
       $sql = "UPDATE time_blocks SET schedule_id = :schedule_id, day_of_week = :day_of_week, start_time = :start_time, end_time = :end_time, label = :label WHERE id = :id";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':id', $oldId);
-      $stmt->bindParam(':schedule_id', $timeBlock->getSchedule());
+      $stmt->bindParam(':schedule_id', $timeBlock->getScheduleId());
       $stmt->bindParam(':day_of_week', $timeBlock->getDay());
       $stmt->bindParam(':start_time', $timeBlock->getStart());
       $stmt->bindParam(':end_time', $timeBlock->getEnd());
       $stmt->bindParam(':label', $timeBlock->getLabel());
       $stmt->execute();
-      
-      return $this->getTimeBlockById($timeBlock->getId());
+
+      return true;
+
     } catch (PDOException $e) {
       error_log("Database error: " . $e->getMessage());
-      return null; 
+      return false; 
     }
   }
 
-  public function deleteTimeBlock(int $id): bool
+   private static function timeBlockExists(PDO $conn, int $id): bool
+    {
+        $stmt = $conn->prepare("SELECT 1 FROM time_blocks WHERE id = :id LIMIT 1");
+        $stmt->execute([':id' => $id]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+  public static function deleteTimeBlock(int $id): bool
   {
+     $conn = \db();
     try {
-      $conn = \db();
       $sql = "DELETE FROM time_blocks WHERE id = :id";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':id', $id);
@@ -122,4 +135,41 @@ class TimeBlockRepository {
       return false; 
     }
   }
+
+  
+  public static function findTimeInSchedule(DateTime $time):? array {
+    $conn = \db();
+    try {
+      $sql = "SELECT s.id as schedule_id, tb.* FROM schedules s JOIN time_blocks tb ON s.id = tb.schedule_id WHERE :time BETWEEN s.effective_date AND s.end_date";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':time', $time->format('Y-m-d H:i:s'));
+      $stmt->execute();
+      $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      if (empty($data)) {
+        return null;
+      }
+
+      $timeBlocks = [];
+      foreach ($data as &$row) {
+          $timeBlock = new TimeBlock(
+              $row['id'],
+              $row['schedule_id'],
+              $row['day_of_week'],
+              $row['start_time'],
+              $row['end_time'],
+              $row['label']
+          );
+          $timeBlocks[] = $timeBlock;
+      }
+      return $timeBlocks;
+
+    } catch (PDOException $e) {
+      error_log("Database error: " . $e->getMessage());
+      return null; 
+    }
+  }
+
 }
+
+\class_alias(__NAMESPACE__ . '\\TimeBlockRepository', 'TimeBlockRepository');
