@@ -6,30 +6,36 @@ $defaultDateTime = (new DateTime('now', new DateTimeZone('America/Montreal')))->
 
 if ($state === 'open'): ?>
 
-    <div>
-        <label>
-            <input type="checkbox" name="filter" value="indoor">
-            Indoor
-        </label><br>
+<div class="filter-menu">
+    <label class="filter-option">
+        <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="indoor">
+        <span class="filter-label">Indoor</span>
+    </label>
 
-        <label>
-            <input type="checkbox" name="filter" value="outdoor">
-            Outdoor
-        </label><br>
+    <label class="filter-option">
+        <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="outdoor">
+        <span class="filter-label">Outdoor</span>
+    </label>
 
-        <label>
-            <input type="checkbox" name="filter" value="splash-pad">
-            Splash Pad
-        </label>
+    <label class="filter-option">
+        <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="splash-pad">
+        <span class="filter-label">Splash Pad</span>
+    </label>
 
-        <label>
-            <input type="checkbox" name="filter" value="wading-pool">
-            Wading Pool
-        </label>
-    </div>
-    <div id="dateTimeContainer">
-        <input type="datetime-local" name="date_time_picker" id="date_time_picker"
-            value="<?= htmlspecialchars($defaultDateTime, ENT_QUOTES, 'UTF-8') ?>">
-    </div>
+    <label class="filter-option">
+        <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="wading-pool">
+        <span class="filter-label">Wading Pool</span>
+    </label>
+</div>
+
+<div id="dateTimeContainer">
+    <input type="datetime-local" name="date_time_picker" id="date_time_picker"
+        value="<?= htmlspecialchars($defaultDateTime, ENT_QUOTES, 'UTF-8') ?>">
+</div>
+
+<div id="distance-slider">
+    // Distance slider will go here
+</div>
+
 
 <?php endif;

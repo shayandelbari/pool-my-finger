@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
 
-
-
 @layer base {
   *,
   ::after,
@@ -130,11 +128,11 @@
 
 @layer components {
   .home-shell {
-    @apply mx-auto w-full max-w-6xl px-4 py-8 md:px-8 md:py-12;
+    @apply w-full max-w-6xl px-4 py-8 mx-auto md:px-8 md:py-12;
   }
 
   .home-hero {
-    @apply rounded-2xl border border-primary/30 bg-linear-to-br from-primary/25 via-card/85 to-accent/45 p-6 shadow-sm backdrop-blur md:p-8 flex flex-row align-middle justify-center;
+    @apply flex flex-row justify-center p-6 align-middle border shadow-sm rounded-2xl border-primary/30 bg-linear-to-br from-primary/25 via-card/85 to-accent/45 backdrop-blur md:p-8;
   }
 
   .home-icon {
@@ -150,7 +148,7 @@
   }
 
   .home-controls-shell {
-    @apply mt-6 rounded-2xl border border-primary/25 bg-secondary/50 p-4 md:p-5;
+    @apply p-4 mt-6 border rounded-2xl border-primary/25 bg-secondary/50 md:p-5;
   }
 
   .home-controls-row {
@@ -162,7 +160,7 @@
   }
 
   .pool-list-header-row {
-    @apply mb-4 flex items-center justify-between gap-3;
+    @apply flex items-center justify-between gap-3 mb-4;
   }
 
   .pool-list-title {
@@ -174,7 +172,7 @@
   }
 
   .pool-list-status {
-    @apply mb-4 rounded-xl border border-primary/20 bg-card px-4 py-3 text-sm;
+    @apply px-4 py-3 mb-4 text-sm border rounded-xl border-primary/20 bg-card;
   }
 
   .pool-list-status.is-loading {
@@ -210,19 +208,19 @@
   }
 
   .pool-card-media {
-    @apply h-full w-full object-cover;
+    @apply object-cover w-full h-full;
   }
 
   .pool-card-content {
-    @apply space-y-3 p-4;
+    @apply p-4 space-y-3;
   }
 
   .pool-card-title {
-    @apply line-clamp-2 text-lg font-semibold;
+    @apply text-lg font-semibold line-clamp-2;
   }
 
   .pool-card-address {
-    @apply line-clamp-2 text-sm text-muted-foreground;
+    @apply text-sm line-clamp-2 text-muted-foreground;
   }
 
   .pool-card-chip-row {
@@ -266,7 +264,7 @@
   }
 
   .pool-pagination-ellipsis {
-    @apply inline-flex min-w-8 items-center justify-center px-1 text-sm text-muted-foreground;
+    @apply inline-flex items-center justify-center px-1 text-sm min-w-8 text-muted-foreground;
   }
 
   .pool-pagination-btn {
@@ -278,11 +276,11 @@
   }
 
   .pool-detail-shell {
-    @apply mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8 md:py-12;
+    @apply w-full max-w-6xl px-4 py-8 mx-auto space-y-6 md:px-8 md:py-12;
   }
 
   .pool-detail-hero {
-    @apply rounded-2xl border border-primary/25 bg-card p-5 shadow-sm md:p-7;
+    @apply p-5 border shadow-sm rounded-2xl border-primary/25 bg-card md:p-7;
   }
 
   .pool-detail-content.is-hidden {
@@ -302,7 +300,7 @@
   }
 
   .pool-detail-meta-grid {
-    @apply mt-5 grid gap-3 rounded-xl border border-primary/20 bg-secondary/30 p-4 text-sm md:grid-cols-2;
+    @apply grid gap-3 p-4 mt-5 text-sm border rounded-xl border-primary/20 bg-secondary/30 md:grid-cols-2;
   }
 
   .pool-detail-media-wrap {
@@ -310,7 +308,7 @@
   }
 
   .pool-detail-media {
-    @apply h-full w-full object-cover;
+    @apply object-cover w-full h-full;
   }
 
   .pool-detail-meta-label {
@@ -318,19 +316,39 @@
   }
 
   .pool-schedules-shell {
-    @apply rounded-2xl border border-primary/25 bg-card p-5 shadow-sm md:p-7;
+    @apply p-5 border shadow-sm rounded-2xl border-primary/25 bg-card md:p-7;
   }
 
   .pool-schedule-grid {
-    @apply mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3;
+    @apply grid grid-cols-1 gap-4 mt-4 md:grid-cols-2 lg:grid-cols-3;
   }
 
   .pool-schedule-mock-card {
-    @apply rounded-xl border border-primary/20 bg-secondary/35 p-4;
+    @apply p-4 border rounded-xl border-primary/20 bg-secondary/35;
   }
 
   .return-home-link {
     @apply inline-flex rounded-md border border-primary/30 bg-card px-3 py-1.5 text-sm transition hover:border-primary/50 hover:bg-secondary;
   }
+
+  .filter-menu {
+  @apply grid grid-cols-4 gap-2 mt-4;
+}
+
+.filter-option {
+  @apply cursor-pointer;
+}
+
+.filter-checkbox {
+  @apply hidden;
+}
+
+.filter-label {
+  @apply flex items-center justify-center px-3 py-2 text-sm font-medium transition border rounded-lg border-primary/25 bg-card hover:bg-secondary;
+}
+
+.filter-checkbox:checked + .filter-label {
+  @apply border-primary bg-primary text-primary-foreground;
+}
 }
 
