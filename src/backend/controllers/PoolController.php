@@ -34,7 +34,7 @@ class PoolController
 
 
     // Controller layer: this endpoint only handles HTTP concerns (METHODS) and delegates pool listing to the service.
-    public function index(): void
+    public static function index(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
             self::jsonResponse(['error' => 'Method not allowed.'], 405);

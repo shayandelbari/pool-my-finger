@@ -1,6 +1,0 @@
-{
-  "headwind.classRegex": {
-    "php": "\\bclass\\s*=\\s*[\\\"\\']([_a-zA-Z0-9\\s\\-\\:/]+)[\\\"\\']"
-  },
-  "python-envs.defaultEnvManager": "ms-python.python:venv"
-}
