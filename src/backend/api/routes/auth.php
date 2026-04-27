@@ -1,24 +1,26 @@
 <?php
 
+use App\Backend\Controllers\AuthController;
+
 switch ($apiPath) {
     case "auth/login":
-        $authController->login();
+        AuthController::login();
         break;
 
     case "auth/validate":
-        $authController->validate();
+        AuthController::validate();
         break;
 
     case "auth/logout":
-        $authController->logout();
+        AuthController::logout();
         break;
 
     case "auth/logout-all":
-        $authController->logoutAll();
+        AuthController::logoutAll();
         break;
 
     case "auth/user":
-        $authController->getUserById();
+        AuthController::getUserById();
         break;
 
     default:

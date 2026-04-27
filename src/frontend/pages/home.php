@@ -17,76 +17,65 @@ $filterMenu = false;
 ?>
 
 <script>
-let mainFilterOpen = false;
-let adultFilterOpen = false;
-let allAgesFilterOpen = false;
+    let mainFilterOpen = false;
 
 
-function toggleMainFilter() {
-    mainFilterOpen = !mainFilterOpen;
-    fetch('<?php echo BASE_URL; ?>/filter', {
+    function toggleMainFilter() {
+        mainFilterOpen = !mainFilterOpen;
+        fetch('<?php echo BASE_URL; ?>/filter', {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded"
             },
             body: "state=" + (mainFilterOpen ? "open" : "closed")
         })
-        .then(res => res.text())
-        .then(html => {
-            document.getElementById("menuContainerAdult").innerHTML = html;
-        });
-}
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById("menuContainer").innerHTML = html;
+            });
+    }
 
-function setPlaceholder(value) {
-    document.querySelector('input[name="search_bar"]').placeholder = value;
-}
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelector('button[name="filter"]').addEventListener('click', toggleMainFilter);
-});
+    function setPlaceholder(value) {
+        document.querySelector('input[name="search_bar"]').placeholder = value;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelector('button[name="filter"]').addEventListener('click', toggleMainFilter);
+    });
 </script>
 
-
-<!-- search bar -->
-<?php
-if (isset($_POST['allPools_btn'])) {
-
-  $isAllPoolsPage = true;
-  $placeholder = "Pool Name";
-} else {
-  $isAllPoolsPage = false;
-  $placeholder = "Postal Code";
-}
-?>
 
 
 
 <div>
-    <input type="text" placeholder="<?php echo $placeholder; ?>" name="search_bar">
-
-    <button type="button" name="search_btn">GO</button>
-
-    <!--
-  <button type="button" onclick="setPlaceholder('Pool Name')">All Pools</button>
-  <button type="button" onclick="setPlaceholder('Postal Code')">By Location</button>
--->
+    <input type="text" placeholder="Postal Code or Pool Name" name="search_bar">
 
     <button type="button" name="filter">FILTER</button>
-    <!-- TODO: Change the filter button to display an icon not the word-->
 
-
-    <div id="menuContainerAdult"></div>
-
-    <div id="menuContainerAllAges"></div>
-
+    <div id="menuContainer"> </div>
 </div>
 
+<script>
+    const now = new Date();
+
+    const minutes = Math.round(now.getMinutes() / 15) * 15;
+    now.setMinutes(minutes);
+    now.setSeconds(0);
+    now.setMilliseconds(0);
+</script>
+
+
+
+
+
+<!--
 <br>
 <footer>
     <div>
         <?php include COMPONENTS_PATH . '/admin-link.php'; ?>
     </div>
 </footer>
-
+-->
 
 </html>

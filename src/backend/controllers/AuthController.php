@@ -15,87 +15,87 @@ class AuthController
     private const SESSION_COOKIE_NAME = 'pool_my_finger_session';
 
     // Controller layer: this method only translates the HTTP login request into a service call and formats the response.
-    public function login(): void
+    public static function login(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
-        $body = $this->readJsonBody();
+        $body = self::readJsonBody();
         $username = isset($body['username']) ? trim((string) $body['username']) : '';
         $password = isset($body['password']) ? (string) $body['password'] : '';
 
         if ($username === '' || $password === '') {
-            $this->jsonResponse(['error' => 'username and password are required.'], 400);
+            self::jsonResponse(['error' => 'username and password are required.'], 400);
             return;
         }
 
         try {
             $result = UserService::login($username, $password);
-            $this->setSessionCookie($result['token'], $result['expiresAt']);
+            self::setSessionCookie($result['token'], $result['expiresAt']);
 
-            $this->jsonResponse([
-                'user' => $this->formatUser($result['user']),
+            self::jsonResponse([
+                'user' => self::formatUser($result['user']),
                 'expiresAt' => $result['expiresAt']->format(DateTimeInterface::ATOM),
             ]);
         } catch (InvalidCredentialsException $e) {
-            $this->jsonResponse(['error' => 'Invalid username or password.'], 401);
+            self::jsonResponse(['error' => 'Invalid username or password.'], 401);
         }
     }
 
     // Controller layer: validation is an endpoint concern because it reads transport state and returns an HTTP response.
-    public function validate(): void
+    public static function validate(): void
     {
-        $token = $this->resolveToken();
+        $token = self::resolveToken();
         if ($token === null) {
-            $this->jsonResponse(['error' => 'Missing session cookie.'], 401);
+            self::jsonResponse(['error' => 'Missing session cookie.'], 401);
             return;
         }
 
         try {
             $session = SessionService::validateSessionToken($token);
-            $this->jsonResponse($this->formatSession($session));
+            self::jsonResponse(self::formatSession($session));
         } catch (SessionValidationException $e) {
-            $this->jsonResponse(['error' => 'Session invalid.'], 401);
+            self::jsonResponse(['error' => 'Session invalid.'], 401);
         }
     }
 
     // Controller layer: logout is HTTP orchestration only; the service owns the revocation rule itself.
-    public function logout(): void
+    public static function logout(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
-        $token = $this->resolveToken();
+        $token = self::resolveToken();
         if ($token === null) {
-            $this->jsonResponse(['error' => 'Missing session cookie.'], 401);
+            self::jsonResponse(['error' => 'Missing session cookie.'], 401);
             return;
         }
 
         $revoked = SessionService::logoutCurrentSession($token);
         if (!$revoked) {
-            $this->jsonResponse(['error' => 'Session not found.'], 404);
+            self::jsonResponse(['error' => 'Session not found.'], 404);
             return;
         }
 
-        $this->clearSessionCookie();
-        $this->jsonResponse(['ok' => true]);
+        self::clearSessionCookie();
+        self::jsonResponse(['ok' => true]);
     }
 
     // Controller layer: bulk logout is still an endpoint wrapper around a service-level user-session action.
-    public function logoutAll(): void
+    public static function logoutAll(): void
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->jsonResponse(['error' => 'Method not allowed.'], 405);
+            self::jsonResponse(['error' => 'Method not allowed.'], 405);
             return;
         }
 
-        $token = $this->resolveToken();
+        $token = self::resolveToken();
         if ($token === null) {
-            $this->jsonResponse(['error' => 'Missing session cookie.'], 401);
+            self::jsonResponse(['error' => 'Missing session cookie.'], 401);
             return;
         }
 
@@ -103,32 +103,32 @@ class AuthController
             $session = SessionService::validateSessionToken($token);
             $count = SessionService::logoutAllUserSessions($session->getUser()->getId());
 
-            $this->jsonResponse(['revokedCount' => $count]);
+            self::jsonResponse(['revokedCount' => $count]);
         } catch (SessionValidationException $e) {
-            $this->jsonResponse(['error' => 'Session invalid.'], 401);
+            self::jsonResponse(['error' => 'Session invalid.'], 401);
         }
     }
 
     // Controller layer: this endpoint returns the current authenticated user, so it belongs here as transport handling.
-    public function getUserById(): void
+    public static function getUserById(): void
     {
-        $token = $this->resolveToken();
+        $token = self::resolveToken();
         if ($token === null) {
-            $this->jsonResponse(['error' => 'Missing session cookie.'], 401);
+            self::jsonResponse(['error' => 'Missing session cookie.'], 401);
             return;
         }
 
         try {
             $session = SessionService::validateSessionToken($token);
-            $this->jsonResponse($this->formatUser($session->getUser()));
+            self::jsonResponse(self::formatUser($session->getUser()));
         } catch (SessionValidationException $e) {
-            $this->jsonResponse(['error' => 'Session invalid.'], 401);
+            self::jsonResponse(['error' => 'Session invalid.'], 401);
             return;
         }
     }
 
     // Controller helper: cookie access is HTTP transport logic, so it stays out of services.
-    private function resolveToken(): ?string
+    private static function resolveToken(): ?string
     {
         $cookie = $_COOKIE[self::SESSION_COOKIE_NAME] ?? null;
 
@@ -143,7 +143,7 @@ class AuthController
     /**
      * @return array<string, mixed>
      */
-    private function readJsonBody(): array
+    private static function readJsonBody(): array
     {
         $raw = file_get_contents('php://input');
         if ($raw === false || trim($raw) === '') {
@@ -158,7 +158,7 @@ class AuthController
     /**
      * @return array<string, mixed>
      */
-    private function formatUser(User $user): array
+    private static function formatUser(User $user): array
     {
         return [
             'id' => $user->getId(),
@@ -171,11 +171,11 @@ class AuthController
     /**
      * @return array<string, mixed>
      */
-    private function formatSession(Session $session): array
+    private static function formatSession(Session $session): array
     {
         return [
             'id' => $session->getId(),
-            'user' => $this->formatUser($session->getUser()),
+            'user' => self::formatUser($session->getUser()),
             'expiresAt' => $session->getExpires()->format(DateTimeInterface::ATOM),
             'revoked' => $session->isRevoked(),
         ];
@@ -185,7 +185,7 @@ class AuthController
     /**
      * @param array<string, mixed> $payload
      */
-    private function jsonResponse(array $payload, int $statusCode = 200): void
+    private static function jsonResponse(array $payload, int $statusCode = 200): void
     {
         http_response_code($statusCode);
         header('Content-Type: application/json');
@@ -193,31 +193,31 @@ class AuthController
     }
 
     // Controller helper: cookie mutation is transport/state management, so it stays in the controller.
-    private function setSessionCookie(string $token, DateTimeInterface $expiresAt): void
+    private static function setSessionCookie(string $token, DateTimeInterface $expiresAt): void
     {
         setcookie(self::SESSION_COOKIE_NAME, $token, [
             'expires' => $expiresAt->getTimestamp(),
             'path' => defined('BASE_URL') ? BASE_URL : '/',
-            'secure' => $this->isHttpsRequest(),
+            'secure' => self::isHttpsRequest(),
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
     }
 
     // Controller helper: clearing the cookie is endpoint cleanup, not application logic.
-    private function clearSessionCookie(): void
+    private static function clearSessionCookie(): void
     {
         setcookie(self::SESSION_COOKIE_NAME, '', [
             'expires' => time() - 3600,
             'path' => defined('BASE_URL') ? BASE_URL : '/',
-            'secure' => $this->isHttpsRequest(),
+            'secure' => self::isHttpsRequest(),
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
     }
 
     // Controller helper: protocol detection is needed for cookie flags and is still an HTTP-layer concern.
-    private function isHttpsRequest(): bool
+    private static function isHttpsRequest(): bool
     {
         if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
             return true;

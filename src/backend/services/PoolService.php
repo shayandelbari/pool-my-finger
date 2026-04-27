@@ -10,13 +10,23 @@ use RuntimeException;
 
 class PoolService
 {
+    /**
+     * @var string[]
+     */
+    private const ALLOWED_POOL_TYPE_FILTERS = [
+        'pisi',
+        'piex',
+        'pata',
+        'jeud',
+    ];
+
     // Service layer: keeps pool reads behind an application boundary so controllers stay transport-only.
     /**
      * @return Pool[]
      */
-    public static function getAllPools(): array
+    public static function getAllPools(array $filters = []): array
     {
-        return PoolRepository::getAllPools();
+        return PoolRepository::getAllPools(self::normalizePoolFilters($filters));
     }
 
     // Service layer: ID validation and orchestration are application concerns, not HTTP or SQL concerns.
@@ -323,6 +333,58 @@ class PoolService
         }
 
         return array_values(array_unique(array_filter($typeIds, static fn(int $id): bool => $id > 0)));
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return array{name?: string, types?: string[]}
+     */
+    private static function normalizePoolFilters(array $filters): array
+    {
+        $normalized = [];
+
+        if (array_key_exists('name', $filters)) {
+            if (!is_string($filters['name'])) {
+                throw new InvalidArgumentException('name filter must be a string.');
+            }
+
+            $name = trim($filters['name']);
+            if ($name !== '') {
+                $normalized['name'] = $name;
+            }
+        }
+
+        if (array_key_exists('types', $filters)) {
+            if (!is_array($filters['types'])) {
+                throw new InvalidArgumentException('type filter must be an array of names.');
+            }
+
+            $types = [];
+            foreach ($filters['types'] as $rawType) {
+                if (!is_string($rawType)) {
+                    throw new InvalidArgumentException('Each type filter must be a string value.');
+                }
+
+                $typeName = strtolower(trim($rawType));
+                if ($typeName === '') {
+                    throw new InvalidArgumentException('Type filter values cannot be empty.');
+                }
+
+                if (!in_array($typeName, self::ALLOWED_POOL_TYPE_FILTERS, true)) {
+                    throw new InvalidArgumentException(
+                        'Invalid type filter. Allowed values: PISI, PIEX, PATA, JEUD. given type: ' . $rawType
+                    );
+                }
+
+                $types[] = $typeName;
+            }
+
+            if ($types !== []) {
+                $normalized['types'] = array_values(array_unique($types));
+            }
+        }
+
+        return $normalized;
     }
 }
 

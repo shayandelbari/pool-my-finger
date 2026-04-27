@@ -26,26 +26,58 @@ require_once __DIR__ . '/PoolTypeRepository.php';
 // Placeholder for PoolRepository class
 class PoolRepository
 {
-    public static function getAllPools(): array
+    /**
+     * @param array{name?: string, types?: string[]} $filters
+     */
+    public static function getAllPools(array $filters = []): array
     {
         try {
             $conn = \db();
-            $stmt = $conn->query(
-                "SELECT
-                    id,
-                    name,
-                    full_address,
-                    primary_image_url,
-                    website,
-                    map_link,
-                    latt,
-                    longt,
-                    phone,
-                    is_active,
-                    created_at
-                 FROM pools
-                 ORDER BY name"
-            );
+            $sql = "SELECT DISTINCT
+                    p.id,
+                    p.name,
+                    p.full_address,
+                    p.primary_image_url,
+                    p.website,
+                    p.map_link,
+                    p.latt,
+                    p.longt,
+                    p.phone,
+                    p.is_active,
+                    p.created_at
+                 FROM pools p";
+
+            $where = [];
+            $params = [];
+
+            if (isset($filters['types']) && $filters['types'] !== []) {
+                $sql .= "
+                 INNER JOIN pool_pool_types ppt ON ppt.pool_id = p.id
+                 INNER JOIN pool_types pt ON pt.id = ppt.pool_type_id";
+
+                $typeConditions = [];
+                foreach (array_values($filters['types']) as $index => $typeName) {
+                    $placeholder = ':type_' . $index;
+                    $typeConditions[] = 'LOWER(pt.description) = ' . $placeholder;
+                    $params[$placeholder] = strtolower(trim($typeName));
+                }
+
+                $where[] = '(' . implode(' OR ', $typeConditions) . ')';
+            }
+
+            if (isset($filters['name']) && $filters['name'] !== '') {
+                $where[] = 'LOWER(p.name) LIKE :name';
+                $params[':name'] = '%' . strtolower(trim($filters['name'])) . '%';
+            }
+
+            if ($where !== []) {
+                $sql .= "\n                 WHERE " . implode(' AND ', $where);
+            }
+
+            $sql .= "\n                 ORDER BY p.name";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute($params);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             return self::hydratePoolsWithTypes($rows);
