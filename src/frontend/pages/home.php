@@ -67,8 +67,18 @@ $filterMenu = false;
 <script>
 let mainFilterOpen = false;
 const CARDS_PER_PAGE = 10;
+const CANADIAN_POSTAL_CODE_RE = /^[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d$/;
+const POSTAL_FILTER_API_URL = '<?php echo API_URL; ?>/pools/postal-search';
+const NAME_FILTER_API_URL = '<?php echo API_URL; ?>/pools';
+const FILTER_TYPE_TO_API_TYPE = {
+    indoor: 'pisi',
+    outdoor: 'piex',
+    'wading-pool': 'pata',
+    'splash-pad': 'jeud'
+};
 let allPools = [];
 let currentPage = 1;
+let filterRefreshTimer = null;
 
 function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>'"]/g, (char) => {
@@ -100,6 +110,10 @@ function poolCardTemplate(pool) {
         pool.imageUrl :
         fallbackImage;
 
+    const distanceText = typeof pool.distance === 'number' && Number.isFinite(pool.distance) ?
+        `Distance: ${pool.distance.toFixed(1)} km` :
+        'Distance: TBD';
+
     return `
             <article class="pool-card">
                 <a class="pool-card-link" href="${baseUrl}/pool/${encodeURIComponent(pool.id)}" aria-label="Open ${escapeHtml(pool.name)} details">
@@ -113,7 +127,7 @@ function poolCardTemplate(pool) {
 
                         <div class="pool-card-chip-row">
                             <span class="pool-chip pool-chip-open">Open now: TBD</span>
-                            <span class="pool-chip pool-chip-distance">Distance: TBD</span>
+                            <span class="pool-chip pool-chip-distance">${escapeHtml(distanceText)}</span>
                         </div>
 
                         <div class="pool-type-badges-row">
@@ -225,16 +239,7 @@ function buildPaginationItems(totalPages, page) {
 }
 
 async function fetchPools() {
-    setPoolListStatus('Loading pools...', 'is-loading');
-
-    const response = await fetch('<?php echo API_URL; ?>/pools');
-
-    if (!response.ok) {
-        throw new Error(`Pool request failed with status ${response.status}`);
-    }
-
-    const payload = await response.json();
-    return Array.isArray(payload.pools) ? payload.pools : [];
+    return fetchFilteredPools(readFilterState());
 }
 
 async function loadPools() {
@@ -263,10 +268,138 @@ async function toggleMainFilter() {
 
     const html = await response.text();
     document.getElementById('menuContainer').innerHTML = html;
+
+    if (mainFilterOpen) {
+        queueFilterRefresh();
+    }
 }
 
 function setPlaceholder(value) {
     document.querySelector('input[name="search_bar"]').placeholder = value;
+}
+
+function normalizePostalCodeCandidate(value) {
+    return String(value ?? '').trim().replace(/\s+/g, '');
+}
+
+function isCanadianPostalCode(value) {
+    return CANADIAN_POSTAL_CODE_RE.test(String(value ?? '').trim());
+}
+
+function normalizeTypeFilters(rawValues) {
+    return rawValues
+        .map((value) => FILTER_TYPE_TO_API_TYPE[value] || '')
+        .filter((value, index, values) => value !== '' && values.indexOf(value) === index);
+}
+
+function readFilterState() {
+    const searchNode = document.querySelector('input[name="search_bar"]');
+    const dateTimeNode = document.getElementById('date_time_picker');
+    const distanceNode = document.getElementById('distance_range');
+    const rawSearch = searchNode ? searchNode.value.trim() : '';
+    const isPostalCode = rawSearch !== '' && isCanadianPostalCode(rawSearch);
+    const normalizedPostalCode = isPostalCode ? normalizePostalCodeCandidate(rawSearch).toUpperCase() : '';
+    const typeValues = Array.from(document.querySelectorAll('input[name="filter[]"]:checked'))
+        .map((input) => input.value);
+
+    return {
+        search: rawSearch,
+        isPostalCode,
+        postalCode: isPostalCode ? normalizedPostalCode : null,
+        name: isPostalCode || rawSearch === '' ? null : rawSearch,
+        dateTime: dateTimeNode && dateTimeNode.value.trim() !== '' ? dateTimeNode.value.trim() : null,
+        distance: distanceNode ? Number(distanceNode.value) : null,
+        types: normalizeTypeFilters(typeValues)
+    };
+}
+
+function buildNameFilterUrl(filters) {
+    const params = new URLSearchParams();
+
+    if (filters.name) {
+        params.set('name', filters.name);
+    }
+
+    if (filters.dateTime) {
+        params.set('time', filters.dateTime);
+    }
+
+    if (filters.types.length > 0) {
+        params.set('type', filters.types.join(','));
+    }
+
+    const query = params.toString();
+    return query === '' ? NAME_FILTER_API_URL : `${NAME_FILTER_API_URL}?${query}`;
+}
+
+function buildPostalFilterUrl(filters) {
+    const params = new URLSearchParams();
+    params.set('postalCode', filters.postalCode);
+
+    if (filters.dateTime) {
+        params.set('time', filters.dateTime);
+    }
+
+    if (typeof filters.distance === 'number' && Number.isFinite(filters.distance)) {
+        params.set('distance', String(filters.distance));
+    }
+
+    if (filters.types.length > 0) {
+        params.set('type', filters.types.join(','));
+    }
+
+    return `${POSTAL_FILTER_API_URL}?${params.toString()}`;
+}
+
+function normalizePoolRecord(pool) {
+    if (!pool || typeof pool !== 'object') {
+        return null;
+    }
+
+    return {
+        id: typeof pool.id === 'number' ? pool.id : Number(pool.id || 0),
+        name: pool.name || null,
+        address: pool.address || null,
+        imageUrl: pool.imageUrl || null,
+        website: pool.website || null,
+        map: pool.map || null,
+        latitude: typeof pool.latitude === 'number' ? pool.latitude : (pool.latitude != null ? Number(pool.latitude) : null),
+        longitude: typeof pool.longitude === 'number' ? pool.longitude : (pool.longitude != null ? Number(pool.longitude) : null),
+        distance: typeof pool.distance === 'number' ? pool.distance : (pool.distance != null ? Number(pool.distance) : null),
+        phone: pool.phone || null,
+        active: typeof pool.active === 'boolean' ? pool.active : true,
+        createdAt: pool.createdAt || null,
+        types: Array.isArray(pool.types) ? pool.types : []
+    };
+}
+
+async function fetchFilteredPools(filters) {
+    setPoolListStatus('Loading pools...', 'is-loading');
+
+    const requestUrl = filters.isPostalCode ? buildPostalFilterUrl(filters) : buildNameFilterUrl(filters);
+    const response = await fetch(requestUrl);
+
+    if (!response.ok) {
+        throw new Error(`Pool request failed with status ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const rawPools = Array.isArray(payload.pools) ? payload.pools : (Array.isArray(payload) ? payload : []);
+    return rawPools
+        .map(normalizePoolRecord)
+        .filter((pool) => pool !== null);
+}
+
+function queueFilterRefresh() {
+    if (filterRefreshTimer !== null) {
+        window.clearTimeout(filterRefreshTimer);
+    }
+
+    filterRefreshTimer = window.setTimeout(() => {
+        filterRefreshTimer = null;
+        currentPage = 1;
+        loadPools();
+    }, 250);
 }
 
 function applyTheme(theme) {
@@ -301,12 +434,36 @@ function initializeThemeToggle() {
 document.addEventListener('DOMContentLoaded', function() {
     initializeThemeToggle();
     document.querySelector('button[name="filter"]').addEventListener('click', toggleMainFilter);
+    document.querySelector('input[name="search_bar"]').addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            currentPage = 1;
+            loadPools();
+        }
+    });
     loadPools();
 });
 
 document.addEventListener('input', function(e) {
     if (e.target.id === 'distance_range') {
         document.getElementById('distanceValue').textContent = e.target.value;
+        queueFilterRefresh();
+        return;
+    }
+
+    if (e.target.name === 'search_bar') {
+        queueFilterRefresh();
+        return;
+    }
+
+    if (e.target.id === 'date_time_picker') {
+        queueFilterRefresh();
+    }
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.name === 'filter[]' || e.target.id === 'date_time_picker' || e.target.id === 'distance_range') {
+        queueFilterRefresh();
     }
 });
 </script>

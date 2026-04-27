@@ -215,16 +215,16 @@ $poolId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
     }
 
     function buildFullMapUrl(pool) {
+        const query = buildMapQuery(pool);
+        if (query !== '') {
+            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+        }
+
         if (pool.map && String(pool.map).trim() !== '') {
             return String(pool.map).trim();
         }
 
-        const query = buildMapQuery(pool);
-        if (query === '') {
-            return null;
-        }
-
-        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+        return null;
     }
 
     function formatDate(dateValue) {
