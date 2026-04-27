@@ -64,7 +64,7 @@ class PoolTypeService
 
     $updatedPoolType = new PoolType($id, $name, $description);
 
-    $isUpdated = PoolTypeRepository::updateType($updatedPoolType);
+    $isUpdated = PoolTypeRepository::updateType($id, $updatedPoolType);
 
     if (!$isUpdated) {
       return null;

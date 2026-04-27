@@ -65,6 +65,34 @@ class ScheduleRepository {
     }
   }
 
+  public static function getScheduleByPoolId(int $poolId): array {
+    $conn = \db();
+    try {
+      $sql = "SELECT * FROM schedules WHERE pool_id = :pool_id";
+      $stmt = $conn->prepare($sql);
+      $stmt->bindParam(':pool_id', $poolId, PDO::PARAM_INT);
+      $stmt->execute();
+      $schedulesArr = $stmt->fetchAll(PDO::FETCH_ASSOC); //array of schedules
+
+      $schedules = [];
+      foreach ($schedulesArr as $oneScheduleArr) {
+        $schedules[] = new Schedule(
+          $oneScheduleArr['id'],
+          $oneScheduleArr['pool_id'],
+          $oneScheduleArr['schedule_type_id'],
+          $oneScheduleArr['effective_date'],
+          $oneScheduleArr['end_date'],
+          new DateTime($oneScheduleArr['created_at'])
+        );
+      }
+      return $schedules;
+    } catch (PDOException $e) {
+      error_log("Database error: " . $e->getMessage());
+      return [];
+    }
+    
+  }
+
   public static function createSchedule(Schedule $schedule): int
   {
     $conn =  \db();

@@ -27,6 +27,13 @@ class ScheduleTimeBlockService {
     return ScheduleRepository::getScheduleById($id);
   }
 
+  public static function getScheduleByPoolId(int $id): array {
+    if ($id <= 0) {
+      throw new InvalidArgumentException('Pool id must be a positive integer.');
+    }
+    return ScheduleRepository::getScheduleByPoolId($id);
+  }
+
   public static function getTimeBlockById(int $id): ?TimeBlock {
     if ($id <=0) {
       throw new InvalidArgumentException('TimeBlock id must be a positive integer.');
