@@ -1,21 +1,45 @@
-<!-- I will take an instance of class pool and use the attributes to fill this template component -->
-<?php include "../models/Pool.php" ?>
+<?php
 
-<div>
-    <h2> <?php echo getName($pool) ?> </h2>
-    <div>
-        <img src=<?php echo getImageUrl($pool) ?> onerror="this.src='../assets/no-image-icon.png';">
-    </div>
-    <div>
-        <h3> <?php echo getAddress($pool) ?> </h3>
+if (!function_exists('renderPoolLinkCard')) {
+    /**
+     * @param array<string, mixed> $pool
+     */
+    function renderPoolLinkCard(array $pool): string
+    {
+        $poolId = isset($pool['id']) ? (int) $pool['id'] : 0;
+        $name = isset($pool['name']) ? (string) $pool['name'] : 'Unknown pool';
+        $address = isset($pool['address']) && trim((string) $pool['address']) !== ''
+            ? (string) $pool['address']
+            : 'Address unavailable';
+        $imageUrl = isset($pool['imageUrl']) && trim((string) $pool['imageUrl']) !== ''
+            ? (string) $pool['imageUrl']
+            : ASSETS_URL . '/no-image-icon.png';
+        $href = BASE_URL . '/pool/' . rawurlencode((string) $poolId);
 
-        <!--  TODO - look into how addresses are being stored.
-        <h3> <?php echo getCity($pool) ?>, <?php echo getProvince($pool) ?> </h3>
-        <h3>
-            <?php echo getPostalCode($pool) ?>
-        </h3>
--->
-        <h3> <?php echo getPhone($pool) ?> </h3>
-        <h3> <?php echo getWebsite($pool) ?> </h3>
-    </div>
-</div>
+        return '
+            <article class="pool-card">
+                <a class="pool-card-link" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">
+                    <div class="pool-card-media-wrap">
+                        <img
+                            class="pool-card-media"
+                            src="' . htmlspecialchars($imageUrl, ENT_QUOTES, 'UTF-8') . '"
+                            alt="' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '"
+                            loading="lazy"
+                            onerror="this.src=\'' . htmlspecialchars(ASSETS_URL . '/no-image-icon.png', ENT_QUOTES, 'UTF-8') . '\';"
+                        >
+                    </div>
+
+                    <div class="pool-card-content">
+                        <h3 class="pool-card-title">' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</h3>
+                        <p class="pool-card-address">' . htmlspecialchars($address, ENT_QUOTES, 'UTF-8') . '</p>
+
+                        <div class="pool-card-chip-row">
+                            <span class="pool-chip pool-chip-open">Open now: TBD</span>
+                            <span class="pool-chip pool-chip-distance">Distance: TBD</span>
+                        </div>
+                    </div>
+                </a>
+            </article>
+        ';
+    }
+}

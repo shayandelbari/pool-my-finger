@@ -66,6 +66,12 @@ if ($path === "/filter") {
     return;
 }
 
+if (preg_match('#^/pool/(\d+)$#', $path, $matches) === 1) {
+    $_GET['id'] = $matches[1];
+    require __DIR__ . "/../src/frontend/pages/pool.php";
+    return;
+}
+
 if (isset($routes[$path])) {
     require __DIR__ . "/../src/frontend/pages/" . $routes[$path];
     return;

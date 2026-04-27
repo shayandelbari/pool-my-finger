@@ -35,11 +35,11 @@
   --primary-foreground: hsl(0 0% 9%);
 
   /*brand colour 2*/
-  --secondary: hsl(0 0% 96.1%);
-  --secondary-foreground: hsl(0 0% 9%);
+  --secondary: hsl(142 35% 94%);
+  --secondary-foreground: hsl(142 45% 20%);
 
-  --accent: hsl(0 0% 96.1%);
-  --accent-foreground: hsl(0 0% 9%);
+  --accent: hsl(142 45% 90%);
+  --accent-foreground: hsl(142 55% 20%);
 
   /*warnings and whatnot*/
   --destructive: hsl(0 72.2% 50.6%);
@@ -67,14 +67,14 @@
   --border: hsl(0 0% 14.9%);
   --input: hsl(0 0% 14.9%);
 
-  --primary: hsl(142 76% 36%);
+  --primary: hsl(186, 44%, 52%);
   --primary-foreground: hsl(0 0% 98%);
 
-  --secondary: hsl(0 0% 14.9%);
+  --secondary: hsl(186, 67%, 18%);
   --secondary-foreground: hsl(0 0% 98%);
 
-  --accent: hsl(0 0% 14.9%);
-  --accent-foreground: hsl(0 0% 98%);
+  --accent: hsl(186, 67%, 18%);
+  --accent-foreground: hsl(142 28% 92%);
 
   --destructive: hsl(0 62.8% 30.6%);
   --destructive-foreground: hsl(0 0% 98%);
@@ -128,14 +128,209 @@
   }
 }
 
-.button-container {
-    display: flex;
-    gap: 10px;
-}
+@layer components {
+  .home-shell {
+    @apply mx-auto w-full max-w-6xl px-4 py-8 md:px-8 md:py-12;
+  }
 
-.btn {
-    flex: 1;
-    text-align: center;
-    padding: 12px;
+  .home-hero {
+    @apply rounded-2xl border border-primary/30 bg-linear-to-br from-primary/25 via-card/85 to-accent/45 p-6 shadow-sm backdrop-blur md:p-8 flex flex-row align-middle justify-center;
+  }
+
+  .home-icon {
+    @apply h-25;
+  }
+
+  .home-title {
+    @apply text-2xl font-semibold tracking-tight md:text-4xl;
+  }
+
+  .home-subtitle {
+    @apply mt-2 text-sm text-muted-foreground md:text-base;
+  }
+
+  .home-controls-shell {
+    @apply mt-6 rounded-2xl border border-primary/25 bg-secondary/50 p-4 md:p-5;
+  }
+
+  .home-controls-row {
+    @apply flex flex-col gap-3 md:flex-row;
+  }
+
+  .pool-list-section {
+    @apply mt-8;
+  }
+
+  .pool-list-header-row {
+    @apply mb-4 flex items-center justify-between gap-3;
+  }
+
+  .pool-list-title {
+    @apply text-xl font-semibold text-primary md:text-2xl;
+  }
+
+  .pool-list-meta {
+    @apply text-xs text-muted-foreground md:text-sm;
+  }
+
+  .pool-list-status {
+    @apply mb-4 rounded-xl border border-primary/20 bg-card px-4 py-3 text-sm;
+  }
+
+  .pool-list-status.is-loading {
+    @apply text-muted-foreground;
+  }
+
+  .pool-list-status.is-error {
+    @apply border-destructive/30 bg-destructive/10 text-destructive-foreground;
+  }
+
+  .pool-list-status.is-empty {
+    @apply text-muted-foreground;
+  }
+
+  .pool-list-status.is-hidden {
+    @apply hidden;
+  }
+
+  .pool-card-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .pool-card {
+    @apply overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md;
+  }
+
+  .pool-card-link {
+    @apply block h-full;
+  }
+
+  .pool-card-media-wrap {
+    @apply aspect-[16/9] w-full overflow-hidden bg-muted;
+  }
+
+  .pool-card-media {
+    @apply h-full w-full object-cover;
+  }
+
+  .pool-card-content {
+    @apply space-y-3 p-4;
+  }
+
+  .pool-card-title {
+    @apply line-clamp-2 text-lg font-semibold;
+  }
+
+  .pool-card-address {
+    @apply line-clamp-2 text-sm text-muted-foreground;
+  }
+
+  .pool-card-chip-row {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .pool-chip {
+    @apply rounded-full border px-2.5 py-1 text-xs font-medium;
+  }
+
+  .pool-chip-open {
+    @apply border-primary/55 bg-primary/22 text-primary-foreground;
+  }
+
+  .pool-chip-distance {
+    @apply border-primary/40 bg-primary/14 text-primary-foreground;
+  }
+
+  .pool-type-badges-row {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .pool-type-badge {
+    @apply rounded-md border border-primary/45 bg-primary/16 px-2.5 py-1 text-xs font-semibold text-primary-foreground;
+  }
+
+  .pool-pagination {
+    @apply mt-5 space-y-3;
+  }
+
+  .pool-pagination.is-hidden {
+    @apply hidden;
+  }
+
+  .pool-pagination-meta {
+    @apply text-sm text-muted-foreground;
+  }
+
+  .pool-pagination-controls {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  .pool-pagination-ellipsis {
+    @apply inline-flex min-w-8 items-center justify-center px-1 text-sm text-muted-foreground;
+  }
+
+  .pool-pagination-btn {
+    @apply rounded-md border border-primary/25 bg-card px-3 py-1.5 text-sm transition hover:border-primary/45 hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer;
+  }
+
+  .pool-pagination-btn.is-active {
+    @apply border-primary/70 bg-primary text-primary-foreground;
+  }
+
+  .pool-detail-shell {
+    @apply mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8 md:py-12;
+  }
+
+  .pool-detail-hero {
+    @apply rounded-2xl border border-primary/25 bg-card p-5 shadow-sm md:p-7;
+  }
+
+  .pool-detail-content.is-hidden {
+    @apply hidden;
+  }
+
+  .pool-detail-top-row {
+    @apply flex flex-col justify-between gap-4 md:flex-row md:items-start;
+  }
+
+  .pool-detail-title {
+    @apply text-2xl font-semibold tracking-tight text-primary md:text-4xl;
+  }
+
+  .pool-detail-address {
+    @apply mt-2 text-sm text-muted-foreground md:text-base;
+  }
+
+  .pool-detail-meta-grid {
+    @apply mt-5 grid gap-3 rounded-xl border border-primary/20 bg-secondary/30 p-4 text-sm md:grid-cols-2;
+  }
+
+  .pool-detail-media-wrap {
+    @apply mt-5 aspect-[16/8] w-full overflow-hidden rounded-xl border border-primary/25 bg-muted;
+  }
+
+  .pool-detail-media {
+    @apply h-full w-full object-cover;
+  }
+
+  .pool-detail-meta-label {
+    @apply font-semibold;
+  }
+
+  .pool-schedules-shell {
+    @apply rounded-2xl border border-primary/25 bg-card p-5 shadow-sm md:p-7;
+  }
+
+  .pool-schedule-grid {
+    @apply mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3;
+  }
+
+  .pool-schedule-mock-card {
+    @apply rounded-xl border border-primary/20 bg-secondary/35 p-4;
+  }
+
+  .return-home-link {
+    @apply inline-flex rounded-md border border-primary/30 bg-card px-3 py-1.5 text-sm transition hover:border-primary/50 hover:bg-secondary;
+  }
 }
 

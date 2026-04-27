@@ -2,21 +2,23 @@
 /**
  * schema.php
  *
- * Uses existing db() connection.
- * Optional --force flag drops tables before creation.
+ * Database bootstrap + schema creation entrypoint.
+ * Optional:
+ *   --force  Drop app tables before recreation.
+ *   --scrape Run scraper and import fresh data snapshot.
  */
-
-require_once __DIR__ . "/connection.php";
 
 $SCRAPER_DIR = __DIR__ . "/../scraper";
 $PYTHON_FILE = $SCRAPER_DIR . "/pool-scraper.py";
 $OUTPUT_JSON = __DIR__ . "/cache/output.json";
-$pdo = db();
 
 $force = in_array("--force", $argv ?? [], true);
 $scrape = in_array("--scrape", $argv ?? [], true);
 
-// Drop tables if --force is specified
+$dbConfig = get_db_config();
+bootstrap_database($dbConfig);
+$pdo = connect_database($dbConfig);
+
 if ($force) {
     try {
         $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
@@ -158,62 +160,187 @@ foreach ($tables as $sql) {
 
 echo $force ? "Schema forcefully recreated.\n" : "Schema created.\n";
 
-function find_python_binary($scraperDir)
+if ($scrape) {
+    echo "Running montreal-pool-scraper and importing JSON into database..." . PHP_EOL;
+
+    if (!run_scraper_to_json($SCRAPER_DIR, $PYTHON_FILE, $OUTPUT_JSON, $dbConfig)) {
+        exit(1);
+    }
+
+    try {
+        import_scraped_json($pdo, $OUTPUT_JSON);
+        echo "Scrape and import completed successfully." . PHP_EOL;
+    } catch (Throwable $e) {
+        fwrite(STDERR, "Import failed: " . $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+}
+
+function get_db_config()
 {
-    $venvPython = $scraperDir . "/venv/bin/python";
-    if (is_file($venvPython) && is_executable($venvPython)) {
-        return $venvPython;
+    return [
+        'host' => getenv('DB_HOST') ?: '127.0.0.1',
+        'port' => getenv('DB_PORT') ?: '3306',
+        'name' => getenv('DB_NAME') ?: 'pool_my_finger',
+        'user' => getenv('DB_USER') ?: 'root',
+        'pass' => getenv('DB_PASS') ?: '',
+    ];
+}
+
+function bootstrap_database(array $dbConfig)
+{
+    $dsn = "mysql:host={$dbConfig['host']};port={$dbConfig['port']};charset=utf8mb4";
+
+    try {
+        $pdo = new PDO($dsn, $dbConfig['user'], $dbConfig['pass'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+        $quotedDbName = str_replace("`", "``", (string) $dbConfig['name']);
+        $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$quotedDbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    } catch (PDOException $e) {
+        fwrite(STDERR, "Database bootstrap failed: " . $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+}
+
+function connect_database(array $dbConfig)
+{
+    $dsn = "mysql:host={$dbConfig['host']};port={$dbConfig['port']};dbname={$dbConfig['name']};charset=utf8mb4";
+
+    try {
+        return new PDO($dsn, $dbConfig['user'], $dbConfig['pass'], [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+    } catch (PDOException $e) {
+        fwrite(STDERR, "Connection failed: " . $e->getMessage() . PHP_EOL);
+        exit(1);
+    }
+}
+
+function find_in_path(array $candidateNames)
+{
+    $path = getenv('PATH') ?: '';
+    if ($path === '') {
+        return null;
     }
 
-    $python3 = trim((string) shell_exec("command -v python3 2>/dev/null"));
-    if ($python3 !== "") {
-        return $python3;
+    $isWindows = DIRECTORY_SEPARATOR === '\\';
+    $pathSeparator = $isWindows ? ';' : ':';
+    $paths = array_filter(explode($pathSeparator, $path));
+
+    $extensions = [''];
+    if ($isWindows) {
+        $pathExt = getenv('PATHEXT') ?: '.EXE;.BAT;.CMD;.COM';
+        $extensions = array_filter(explode(';', $pathExt));
+        if ($extensions === []) {
+            $extensions = ['.EXE', '.BAT', '.CMD', '.COM'];
+        }
     }
 
-    $python = trim((string) shell_exec("command -v python 2>/dev/null"));
-    if ($python !== "") {
-        return $python;
+    foreach ($paths as $dir) {
+        foreach ($candidateNames as $name) {
+            $nameHasExtension = pathinfo($name, PATHINFO_EXTENSION) !== '';
+            if ($isWindows && !$nameHasExtension) {
+                foreach ($extensions as $ext) {
+                    $candidate = rtrim($dir, "\\/") . DIRECTORY_SEPARATOR . $name . $ext;
+                    if (is_file($candidate) && is_executable($candidate)) {
+                        return $candidate;
+                    }
+                }
+                continue;
+            }
+
+            $candidate = rtrim($dir, "\\/") . DIRECTORY_SEPARATOR . $name;
+            if (is_file($candidate) && is_executable($candidate)) {
+                return $candidate;
+            }
+        }
     }
 
     return null;
 }
 
-function run_scraper_to_json($scraperDir, $pythonFile, $outputJson)
+function find_python_binary($scraperDir)
+{
+    $candidates = [
+        $scraperDir . DIRECTORY_SEPARATOR . "venv" . DIRECTORY_SEPARATOR . "bin" . DIRECTORY_SEPARATOR . "python",
+        $scraperDir . DIRECTORY_SEPARATOR . "venv" . DIRECTORY_SEPARATOR . "bin" . DIRECTORY_SEPARATOR . "python3",
+        $scraperDir . DIRECTORY_SEPARATOR . "venv" . DIRECTORY_SEPARATOR . "Scripts" . DIRECTORY_SEPARATOR . "python.exe",
+        $scraperDir . DIRECTORY_SEPARATOR . "venv" . DIRECTORY_SEPARATOR . "Scripts" . DIRECTORY_SEPARATOR . "python",
+    ];
+
+    foreach ($candidates as $candidate) {
+        if (is_file($candidate) && is_executable($candidate)) {
+            return $candidate;
+        }
+    }
+
+    return find_in_path(['python3', 'python']);
+}
+
+function run_scraper_to_json($scraperDir, $pythonFile, $outputJson, array $dbConfig)
 {
     $pythonBinary = find_python_binary($scraperDir);
     if ($pythonBinary === null) {
-        fwrite(STDERR, "No Python executable found (tried venv, python3, python)." . PHP_EOL);
+        fwrite(STDERR, "No Python executable found (tried local venv, python3, python)." . PHP_EOL);
         return false;
     }
 
-    $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
-    $dbPort = getenv('DB_PORT') ?: '3306';
-    $dbName = getenv('DB_NAME') ?: 'pool_my_finger';
-    $dbUser = getenv('DB_USER') ?: 'root';
-    $dbPass = getenv('DB_PASS') ?: '';
+    $outputDir = dirname($outputJson);
+    if (!is_dir($outputDir) && !mkdir($outputDir, 0777, true) && !is_dir($outputDir)) {
+        fwrite(STDERR, "Unable to create scraper output directory: {$outputDir}" . PHP_EOL);
+        return false;
+    }
 
-    $envPrefix = "DB_HOST=" . escapeshellarg($dbHost)
-        . " DB_PORT=" . escapeshellarg($dbPort)
-        . " DB_NAME=" . escapeshellarg($dbName)
-        . " DB_USER=" . escapeshellarg($dbUser)
-        . " DB_PASS=" . escapeshellarg($dbPass)
-        . " ENV=" . escapeshellarg('prod');
+    $command = [
+        $pythonBinary,
+        $pythonFile,
+        "--quiet",
+        "--output-json",
+        $outputJson,
+    ];
 
-    $cmd = "cd " . escapeshellarg($scraperDir)
-        . " && " . $envPrefix
-        . " " . escapeshellarg($pythonBinary)
-        . " " . escapeshellarg($pythonFile)
-        . " --quiet --output-json " . escapeshellarg($outputJson)
-        . " 2>&1";
+    $currentEnv = getenv();
+    if (!is_array($currentEnv)) {
+        $currentEnv = [];
+    }
 
-    $outputLines = [];
-    $exitCode = 0;
-    exec($cmd, $outputLines, $exitCode);
+    $env = array_merge($currentEnv, $_ENV, [
+        "DB_HOST" => (string) $dbConfig['host'],
+        "DB_PORT" => (string) $dbConfig['port'],
+        "DB_NAME" => (string) $dbConfig['name'],
+        "DB_USER" => (string) $dbConfig['user'],
+        "DB_PASS" => (string) $dbConfig['pass'],
+    ]);
 
+    $descriptorSpec = [
+        0 => ["pipe", "r"],
+        1 => ["pipe", "w"],
+        2 => ["pipe", "w"],
+    ];
+
+    $process = proc_open($command, $descriptorSpec, $pipes, $scraperDir, $env);
+    if (!is_resource($process)) {
+        fwrite(STDERR, "Failed to start scraper process." . PHP_EOL);
+        return false;
+    }
+
+    fclose($pipes[0]);
+    $stdout = stream_get_contents($pipes[1]);
+    $stderr = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    $exitCode = proc_close($process);
     if ($exitCode !== 0) {
         fwrite(STDERR, "Scraper execution failed (exit code {$exitCode})." . PHP_EOL);
-        if (!empty($outputLines)) {
-            fwrite(STDERR, implode(PHP_EOL, $outputLines) . PHP_EOL);
+        if (is_string($stdout) && trim($stdout) !== '') {
+            fwrite(STDERR, trim($stdout) . PHP_EOL);
+        }
+        if (is_string($stderr) && trim($stderr) !== '') {
+            fwrite(STDERR, trim($stderr) . PHP_EOL);
         }
         return false;
     }
@@ -221,7 +348,6 @@ function run_scraper_to_json($scraperDir, $pythonFile, $outputJson)
     return true;
 }
 
-// TODO: add inserting latt and longt from the scraper output
 function import_scraped_json(PDO $pdo, $outputJson)
 {
     if (!is_file($outputJson)) {
@@ -397,7 +523,7 @@ function import_scraped_json(PDO $pdo, $outputJson)
 
                     $insertTimeBlock->execute([
                         ':schedule_id' => $scheduleId,
-                        ':day_of_week' => $day,
+                        ':day_of_week' => ucfirst($day),
                         ':start_time' => $startTime,
                         ':end_time' => $endTime,
                         ':label' => isset($block['label']) ? mb_substr((string) $block['label'], 0, 100) : null,
@@ -413,21 +539,5 @@ function import_scraped_json(PDO $pdo, $outputJson)
     } catch (Throwable $e) {
         $pdo->rollBack();
         throw $e;
-    }
-}
-
-if ($scrape) {
-    echo "Running montreal-pool-scraper and importing JSON into database..." . PHP_EOL;
-
-    if (!run_scraper_to_json($SCRAPER_DIR, $PYTHON_FILE, $OUTPUT_JSON)) {
-        exit(1);
-    }
-
-    try {
-        import_scraped_json($pdo, $OUTPUT_JSON);
-        echo "Scrape and import completed successfully." . PHP_EOL;
-    } catch (Throwable $e) {
-        fwrite(STDERR, "Import failed: " . $e->getMessage() . PHP_EOL);
-        exit(1);
     }
 }
