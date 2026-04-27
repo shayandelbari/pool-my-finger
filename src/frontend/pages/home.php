@@ -7,18 +7,18 @@
     <link href="<?php echo ASSETS_URL; ?>/css/styles.css" rel="stylesheet" />
     <title>Home</title>
     <script>
-        (() => {
-            try {
-                const storedTheme = localStorage.getItem('pmf-theme');
-                const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-                const theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : preferredTheme;
-                document.documentElement.classList.toggle('dark', theme === 'dark');
-                document.documentElement.dataset.theme = theme;
-            } catch (error) {
-                document.documentElement.classList.add('dark');
-                document.documentElement.dataset.theme = 'dark';
-            }
-        })();
+    (() => {
+        try {
+            const storedTheme = localStorage.getItem('pmf-theme');
+            const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            const theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : preferredTheme;
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            document.documentElement.dataset.theme = theme;
+        } catch (error) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.dataset.theme = 'dark';
+        }
+    })();
     </script>
 </head>
 
@@ -26,20 +26,47 @@
 include COMPONENTS_PATH . '/header.php';
 
 $filterMenu = false;
+
+$state = $_POST['state'] ?? 'closed';
+
+// initalize the DT picker, but rnded up to the next 15 mins mark
+// the app is for MTL, so I will hard set the timezone to EST, but this will need ot be changed to dynamic if this is for other cities in the future
+$dt = new DateTime('now', new DateTimeZone('America/Montreal'));
+
+$minutes = (int)$dt->format('i');
+$remainder = $minutes % 15;
+
+// if not already on a 15-min mark, round UP
+if ($remainder !== 0) {
+    $dt->modify('+' . (15 - $remainder) . ' minutes');
+}
+
+// zero out seconds just to be clean
+$dt->setTime((int)$dt->format('H'), (int)$dt->format('i'), 0);
+
+$defaultDateTime = $dt->format('Y-m-d\TH:i');
+
+if ($state === 'open'): 
+    endif;
 ?>
 
 <body>
+
     <main class="home-shell">
+
+        <!-- Dark / Light -->
         <div class="page-tools-row page-tools-row-home">
             <div class="page-tools-spacer" aria-hidden="true"></div>
             <?php include COMPONENTS_PATH . '/theme-toggle.php'; ?>
         </div>
 
+        <!-- Hero / Logo -->
         <section class="home-hero">
             <img class="home-icon" src="<?php echo ASSETS_URL; ?>/PMF_header_accent1.png"
                 alt="Pool My Finger Logo - Full">
         </section>
 
+        <!-- Search Bar & Filter Btn -->
         <section class="home-controls-shell" aria-label="Search and filters">
             <div class="home-controls-row">
                 <input type="text" placeholder="Postal Code or Pool Name" name="search_bar">
@@ -48,7 +75,48 @@ $filterMenu = false;
                     <img src="<?php echo ASSETS_URL; ?>/filter.png" alt="FILTER" class="filter-btn-icon">
                 </button>
             </div>
-            <div id="menuContainer"></div>
+
+            <!-- Toggleable filter panel -->
+            <div id="menuContainer" class="filter-panel is-hidden">
+                <div class="filter-menu">
+                    <label class="filter-option">
+                        <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="indoor">
+                        <span class="filter-label">Indoor</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="outdoor">
+                        <span class="filter-label">Outdoor</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="splash-pad">
+                        <span class="filter-label">Splash Pad</span>
+                    </label>
+
+                    <label class="filter-option">
+                        <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="wading-pool">
+                        <span class="filter-label">Wading Pool</span>
+                    </label>
+                </div>
+
+                <div id="dateTimeContainer" class="filter-datetime-container">
+                    <input type="datetime-local" name="date_time_picker" id="date_time_picker"
+                        class="filter-datetime-input" step="900"
+                        value="<?= htmlspecialchars($defaultDateTime, ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+
+                <div class="filter-range-container">
+                    <label for="distance_range" class="filter-range-text">Distance:</label>
+
+                    <input type="range" id="distance_range" name="distance_range" min="1" max="50" value="50"
+                        class="filter-range-slider">
+
+                    <span class="filter-range-value">
+                        <span id="distanceValue">50</span> km
+                    </span>
+                </div>
+            </div>
         </section>
 
         <section class="pool-list-section" aria-label="Pools list">
@@ -255,23 +323,11 @@ async function loadPools() {
     }
 }
 
-async function toggleMainFilter() {
+function toggleMainFilter() {
     mainFilterOpen = !mainFilterOpen;
 
-    const response = await fetch('<?php echo BASE_URL; ?>/filter', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: 'state=' + (mainFilterOpen ? 'open' : 'closed')
-    });
-
-    const html = await response.text();
-    document.getElementById('menuContainer').innerHTML = html;
-
-    if (mainFilterOpen) {
-        queueFilterRefresh();
-    }
+    const menu = document.getElementById('menuContainer');
+    menu.classList.toggle('is-hidden', !mainFilterOpen);
 }
 
 function setPlaceholder(value) {
@@ -363,9 +419,12 @@ function normalizePoolRecord(pool) {
         imageUrl: pool.imageUrl || null,
         website: pool.website || null,
         map: pool.map || null,
-        latitude: typeof pool.latitude === 'number' ? pool.latitude : (pool.latitude != null ? Number(pool.latitude) : null),
-        longitude: typeof pool.longitude === 'number' ? pool.longitude : (pool.longitude != null ? Number(pool.longitude) : null),
-        distance: typeof pool.distance === 'number' ? pool.distance : (pool.distance != null ? Number(pool.distance) : null),
+        latitude: typeof pool.latitude === 'number' ? pool.latitude : (pool.latitude != null ? Number(pool.latitude) :
+            null),
+        longitude: typeof pool.longitude === 'number' ? pool.longitude : (pool.longitude != null ? Number(pool
+            .longitude) : null),
+        distance: typeof pool.distance === 'number' ? pool.distance : (pool.distance != null ? Number(pool.distance) :
+            null),
         phone: pool.phone || null,
         active: typeof pool.active === 'boolean' ? pool.active : true,
         createdAt: pool.createdAt || null,
@@ -462,7 +521,8 @@ document.addEventListener('input', function(e) {
 });
 
 document.addEventListener('change', function(e) {
-    if (e.target.name === 'filter[]' || e.target.id === 'date_time_picker' || e.target.id === 'distance_range') {
+    if (e.target.name === 'filter[]' || e.target.id === 'date_time_picker' || e.target.id ===
+        'distance_range') {
         queueFilterRefresh();
     }
 });

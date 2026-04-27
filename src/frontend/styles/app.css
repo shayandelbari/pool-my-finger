@@ -300,7 +300,7 @@
   }
 
   .pool-detail-body {
-    @apply space-y-5 mt-5;
+    @apply mt-5 space-y-5;
   }
 
   .pool-detail-top-row {
@@ -332,7 +332,7 @@
   }
 
   .pool-detail-meta-label {
-    @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+    @apply text-xs font-semibold tracking-wide uppercase text-muted-foreground;
   }
 
   .pool-detail-map-shell {
@@ -356,7 +356,7 @@
   }
 
   .pool-detail-action-btn {
-    @apply inline-flex items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90;
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition border rounded-md border-primary bg-primary text-primary-foreground hover:opacity-90;
   }
 
   .pool-detail-action-btn.is-secondary {
@@ -365,7 +365,7 @@
 
   .pool-detail-action-btn.is-disabled,
   .pool-detail-meta-grid a.is-disabled {
-    @apply opacity-60 pointer-events-none;
+    @apply pointer-events-none opacity-60;
   }
 
   .pool-schedules-shell {
@@ -377,7 +377,7 @@
   }
 
   .pool-schedule-card {
-    @apply p-4 border rounded-xl border-primary/20 bg-secondary/35 space-y-4;
+    @apply p-4 space-y-4 border rounded-xl border-primary/20 bg-secondary/35;
   }
 
   .pool-schedule-card-header {
@@ -417,7 +417,7 @@
   }
 
   .theme-toggle {
-    @apply inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/25 bg-card text-foreground shadow-sm transition hover:border-primary/50 hover:bg-secondary cursor-pointer;
+    @apply inline-flex items-center justify-center transition border rounded-full shadow-sm cursor-pointer h-11 w-11 border-primary/25 bg-card text-foreground hover:border-primary/50 hover:bg-secondary;
   }
 
   .theme-toggle:focus-visible {
@@ -425,11 +425,11 @@
   }
 
   .theme-toggle-icon {
-    @apply h-5 w-5;
+    @apply w-5 h-5;
   }
 
   .theme-toggle-icon svg {
-    @apply h-full w-full;
+    @apply w-full h-full;
   }
 
   .theme-toggle-icon-sun {
@@ -443,6 +443,10 @@
   .dark .theme-toggle-icon-moon {
     @apply hidden;
   }
+
+  .filter-panel.is-hidden {
+  @apply hidden;
+}
 
   .filter-menu {
   @apply grid grid-cols-4 gap-2 mt-4;
