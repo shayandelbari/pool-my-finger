@@ -16,6 +16,7 @@ class TopPoolsRepository
     {
         try {
             $conn = \db();
+            $dayOfWeek = date('l', strtotime($date));
 
             $sql = "SELECT
                         p.id,
@@ -32,7 +33,7 @@ class TopPoolsRepository
                         s.id AS schedule_id,
                         s.effective_date,
                         s.end_date,
-                        s.day_of_week,
+                        tb.day_of_week,
                         tb.id AS time_block_id,
                         tb.start_time,
                         tb.end_time,
@@ -43,9 +44,11 @@ class TopPoolsRepository
                     WHERE p.is_active = 1
                       AND p.latt BETWEEN :minLat AND :maxLat
                       AND p.longt BETWEEN :minLng AND :maxLng
-                      AND s.effective_date <= :date
-                      AND (s.end_date IS NULL OR s.end_date >= :date)
-                      AND s.day_of_week = :dow";
+                                            AND s.effective_date <= :date
+                                            AND s.end_date >= :date
+                                            AND tb.day_of_week = :dow
+                                            AND tb.start_time >= :time
+                                        ORDER BY ABS(TIME_TO_SEC(TIMEDIFF(tb.start_time, :time))) ASC";
 
             $params = [
                 ':minLat' => $minLat,
@@ -53,7 +56,8 @@ class TopPoolsRepository
                 ':minLng' => $minLng,
                 ':maxLng' => $maxLng,
                 ':date' => $date,
-                ':dow' => date('w', strtotime($date)),
+                ':dow' => $dayOfWeek,
+                ':time' => $time,
             ];
 
             if ($type !== null && $type !== '') {
@@ -72,7 +76,7 @@ class TopPoolsRepository
                             s.id AS schedule_id,
                             s.effective_date,
                             s.end_date,
-                            s.day_of_week,
+                            tb.day_of_week,
                             tb.id AS time_block_id,
                             tb.start_time,
                             tb.end_time,
@@ -86,12 +90,16 @@ class TopPoolsRepository
                           AND p.latt BETWEEN :minLat AND :maxLat
                           AND p.longt BETWEEN :minLng AND :maxLng
                           AND LOWER(pt.description) = :type
-                          AND s.effective_date <= :date
-                          AND (s.end_date IS NULL OR s.end_date >= :date)
-                          AND s.day_of_week = :dow";
+                                                    AND s.effective_date <= :date
+                                                    AND s.end_date >= :date
+                                                    AND tb.day_of_week = :dow
+                                                    AND tb.start_time >= :time
+                                                ORDER BY ABS(TIME_TO_SEC(TIMEDIFF(tb.start_time, :time))) ASC";
 
                 $params[':type'] = $type;
             }
+
+            $params[':time'] = $time;
 
             $stmt = $conn->prepare($sql);
             $stmt->execute($params);

@@ -7,6 +7,7 @@ class TopPoolResult
     private array $pool;
     private array $schedule;
     private float $distance;
+    private int $timeGapSeconds = 0;
 
     public function __construct(array $pool, array $schedule, float $distance)
     {
@@ -44,13 +45,28 @@ class TopPoolResult
         return new self($pool, $schedule, $distance);
     }
 
+    public static function fromRowWithGap(array $row, float $distance, int $timeGapSeconds): self
+    {
+        $instance = self::fromRow($row, $distance);
+        $instance->timeGapSeconds = $timeGapSeconds;
+        return $instance;
+    }
+
     public function toArray(): array
     {
+        $sched = $this->schedule;
+        $sched['timeGapSeconds'] = $this->timeGapSeconds;
+
         return [
             'pool' => $this->pool,
-            'relevantSchedule' => $this->schedule,
+            'relevantSchedule' => $sched,
             'distance' => round($this->distance, 2),
         ];
+    }
+
+    public function getTimeGap(): int
+    {
+        return $this->timeGapSeconds;
     }
 }
 

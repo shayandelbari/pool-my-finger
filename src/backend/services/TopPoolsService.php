@@ -6,6 +6,7 @@ use App\Backend\Models\TopPoolResult;
 use App\Backend\Repositories\TopPoolsRepository;
 use DateTimeImmutable;
 use InvalidArgumentException;
+use RuntimeException;
 
 class TopPoolsService
 {
@@ -37,7 +38,8 @@ class TopPoolsService
 
         $now = new DateTimeImmutable();
         $sixMonths = $now->modify('+6 months');
-        if ($dateTime < $now) {
+        // Allow a 1-second leeway for nearly-simultaneous timestamps from caller
+        if ($dateTime < $now->modify('-1 second')) {
             throw new InvalidArgumentException('dateTime cannot be in the past.');
         }
         if ($dateTime > $sixMonths) {
@@ -55,34 +57,91 @@ class TopPoolsService
 
         [$minLat, $maxLat, $minLng, $maxLng] = self::boundingBox($lat, $lng, $radiusKm);
 
-        $candidates = TopPoolsRepository::findCandidates($minLat, $maxLat, $minLng, $maxLng, $dateTime->format('Y-m-d'), $dateTime->format('H:i:s'), $type);
+        $timeStr = $dateTime->format('H:i:s');
+        $candidates = TopPoolsRepository::findCandidates($minLat, $maxLat, $minLng, $maxLng, $dateTime->format('Y-m-d'), $timeStr, $type);
+
+        // Group candidates by pool and pick the single best schedule per pool by time closeness
+        $byPool = [];
+        foreach ($candidates as $row) {
+            $poolId = isset($row['id']) ? (int) $row['id'] : 0;
+            if (!isset($byPool[$poolId])) {
+                $byPool[$poolId] = [];
+            }
+            $byPool[$poolId][] = $row;
+        }
 
         $results = [];
-        foreach ($candidates as $row) {
-            if (!isset($row['latt']) || !isset($row['longt'])) {
+        foreach ($byPool as $poolId => $rows) {
+            $best = null;
+            $bestGap = PHP_INT_MAX;
+            foreach ($rows as $row) {
+                if (!isset($row['start_time'])) {
+                    continue;
+                }
+
+                $gap = abs(strtotime($row['start_time']) - strtotime($timeStr));
+                if ($gap < $bestGap) {
+                    $bestGap = $gap;
+                    $best = $row;
+                }
+            }
+
+            if ($best === null) {
                 continue;
             }
 
-            $poolLat = (float) $row['latt'];
-            $poolLng = (float) $row['longt'];
+            if (!isset($best['latt']) || !isset($best['longt'])) {
+                continue;
+            }
 
+            $poolLat = (float) $best['latt'];
+            $poolLng = (float) $best['longt'];
             $distanceKm = self::approxDistanceKm($lat, $lng, $poolLat, $poolLng);
             if ($distanceKm > $radiusKm) {
                 continue;
             }
 
-            $tp = TopPoolResult::fromRow($row, $distanceKm);
+            $tp = TopPoolResult::fromRowWithGap($best, $distanceKm, (int) $bestGap);
             $results[] = $tp;
         }
+
+        // Optionally sort by time gap (closest schedules first)
+        usort($results, fn($a, $b) => $a->getTimeGap() <=> $b->getTimeGap());
 
         return $results;
     }
 
     private static function geocodePostalCode(string $postalCode): array
     {
-        // Minimal stub geocoder — replace with real geocoding in production.
-        // Return Ottawa center as a default.
-        return [45.4215, -75.6972];
+        $url = 'https://geocoder.ca/?locate=' . urlencode($postalCode) . '&geoit=XML&json=1';
+        $geocoder = curl_init($url);
+        curl_setopt($geocoder, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($geocoder, CURLOPT_HTTPHEADER, [
+            'Accept: application/json',
+        ]);
+        curl_setopt($geocoder, CURLOPT_TIMEOUT, 5);
+
+        $response = curl_exec($geocoder);
+        $err = curl_error($geocoder);
+        curl_close($geocoder);
+
+        if ($response === false || $response === '') {
+            throw new RuntimeException('Failed to geocode postal code: ' . $postalCode . '. cURL error: ' . $err);
+        }
+
+        $data = json_decode($response, true);
+        if (!is_array($data) || !isset($data['latt'], $data['longt'])) {
+            throw new RuntimeException('Failed to geocode postal code: ' . $postalCode);
+        }
+
+        $lat = is_numeric($data['latt']) ? (float) $data['latt'] : null;
+        $lng = is_numeric($data['longt']) ? (float) $data['longt'] : null;
+
+        if ($lat === null || $lng === null) {
+            throw new RuntimeException('Invalid geocode response for: ' . $postalCode);
+        }
+
+        return [$lat, $lng];
     }
 
     private static function boundingBox(float $lat, float $lng, float $radiusKm): array

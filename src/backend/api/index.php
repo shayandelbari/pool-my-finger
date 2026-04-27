@@ -49,13 +49,13 @@ switch ($apiPath) {
             break;
         }
 
-        if (str_starts_with($apiPath, 'pool') || str_starts_with($apiPath, 'pools')) {
-            require __DIR__ . '/routes/pools.php';
+        if (str_starts_with($apiPath, 'pools-top')) {
+            require __DIR__ . '/routes/pools-top.php';
             break;
         }
 
-        if (str_starts_with($apiPath, 'pools-top')) {
-            require __DIR__ . '/routes/pools-top.php';
+        if (str_starts_with($apiPath, 'pool') || str_starts_with($apiPath, 'pools')) {
+            require __DIR__ . '/routes/pools.php';
             break;
         }
 
