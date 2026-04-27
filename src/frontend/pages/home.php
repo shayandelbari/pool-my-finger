@@ -1,11 +1,25 @@
 <!doctype html>
-<html class="dark">
+<html>
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="<?php echo ASSETS_URL; ?>/css/styles.css" rel="stylesheet" />
     <title>Home</title>
+    <script>
+        (() => {
+            try {
+                const storedTheme = localStorage.getItem('pmf-theme');
+                const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                const theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : preferredTheme;
+                document.documentElement.classList.toggle('dark', theme === 'dark');
+                document.documentElement.dataset.theme = theme;
+            } catch (error) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.dataset.theme = 'dark';
+            }
+        })();
+    </script>
 </head>
 
 <?php
@@ -16,6 +30,11 @@ $filterMenu = false;
 
 <body>
     <main class="home-shell">
+        <div class="page-tools-row page-tools-row-home">
+            <div class="page-tools-spacer" aria-hidden="true"></div>
+            <?php include COMPONENTS_PATH . '/theme-toggle.php'; ?>
+        </div>
+
         <section class="home-hero">
             <img class="home-icon" src="<?php echo ASSETS_URL; ?>/PMF_header_accent1.png"
                 alt="Pool My Finger Logo - Full">
@@ -250,7 +269,37 @@ function setPlaceholder(value) {
     document.querySelector('input[name="search_bar"]').placeholder = value;
 }
 
+function applyTheme(theme) {
+    const isDark = theme === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        button.setAttribute('aria-pressed', String(isDark));
+        button.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+        button.setAttribute('title', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+    });
+}
+
+function initializeThemeToggle() {
+    const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    applyTheme(currentTheme);
+
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const nextTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(nextTheme);
+
+            try {
+                localStorage.setItem('pmf-theme', nextTheme);
+            } catch (error) {
+                // Ignore storage errors and keep the visual theme change.
+            }
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    initializeThemeToggle();
     document.querySelector('button[name="filter"]').addEventListener('click', toggleMainFilter);
     loadPools();
 });
