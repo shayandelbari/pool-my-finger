@@ -54,6 +54,11 @@ switch ($apiPath) {
             break;
         }
 
+        if (str_starts_with($apiPath, 'pools-top')) {
+            require __DIR__ . '/routes/pools-top.php';
+            break;
+        }
+
         if (str_starts_with($apiPath, 'schedule') || str_starts_with($apiPath, 'schedules')) {
             require __DIR__ . '/routes/schedules.php';
             break;
