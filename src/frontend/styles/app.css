@@ -350,5 +350,56 @@
 .filter-checkbox:checked + .filter-label {
   @apply border-primary bg-primary text-primary-foreground;
 }
+
+.filter-range-container {
+  @apply flex items-center gap-3 mt-4;
+}
+
+.filter-range-text {
+  @apply text-sm font-medium whitespace-nowrap;
+}
+
+.filter-range-slider {
+  @apply flex-1 cursor-pointer;
+}
+
+.filter-range-value {
+  @apply text-sm font-medium whitespace-nowrap;
+}
+.filter-datetime-container {
+  @apply flex justify-center mt-4;
+}
+
+.filter-datetime-input {
+  @apply w-full max-w-xs px-3 py-2 text-sm border rounded-lg border-primary/25 text-foreground;
+  background-color: #e5e7eb;
+  color: #111827;
+   /* cant see that little calander icon with the dark mode, so had to hardcode this bish to be lighter gray. lmk know if its not part of the design style we wanted */
+}
+
+.filter-datetime-input:focus {
+  @apply outline-none ring-2 ring-primary/40;
+}
+
+.home-controls-row {
+  @apply flex flex-row items-center w-full max-w-2xl gap-3 mx-auto;
+}
+
+.home-controls-row input[name="search_bar"] {
+  @apply flex-1 h-12 min-w-0 px-4 text-sm border rounded-lg border-primary/25 bg-card text-foreground;
+}
+
+.home-controls-row input[name="search_bar"]:focus {
+  @apply outline-none ring-2 ring-primary/40;
+}
+
+.filter-btn {
+  @apply flex items-center justify-center w-12 h-12 p-2 transition border rounded-lg shrink-0 border-primary/25 bg-primary hover:bg-primary/80;
+}
+
+.filter-btn-icon {
+  @apply w-6 h-6;
+}
+
 }
 

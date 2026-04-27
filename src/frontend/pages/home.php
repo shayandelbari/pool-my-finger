@@ -24,9 +24,9 @@ $filterMenu = false;
         <section class="home-controls-shell" aria-label="Search and filters">
             <div class="home-controls-row">
                 <input type="text" placeholder="Postal Code or Pool Name" name="search_bar">
-                <button type="button" name="filter" class="rounded-btn p-3 flex rounded-lg items-center justify-center">
-                    <img src="<?php echo ASSETS_URL; ?>/filter.png" alt="FILTER" class="bg-primary w-6 h-6">
-                    <!-- Filter Icon accreditation to https://www.flaticon.com/free-icon/filter_2676818?term=filter&page=1&position=4&origin=search&related_id=2676818 -->
+
+                <button type="button" name="filter" class="filter-btn">
+                    <img src="<?php echo ASSETS_URL; ?>/filter.png" alt="FILTER" class="filter-btn-icon">
                 </button>
             </div>
             <div id="menuContainer"></div>
@@ -253,6 +253,12 @@ function setPlaceholder(value) {
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('button[name="filter"]').addEventListener('click', toggleMainFilter);
     loadPools();
+});
+
+document.addEventListener('input', function(e) {
+    if (e.target.id === 'distance_range') {
+        document.getElementById('distanceValue').textContent = e.target.value;
+    }
 });
 </script>
 
