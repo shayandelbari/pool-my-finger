@@ -7,8 +7,6 @@ use DateTime;
 use PDO;
 use PDOException;
 
-require_once '../models/TimeBlock.php';
-
 class TimeBlockRepository { 
   public static  function getAllTimeBlocks(): array
   {
@@ -62,6 +60,47 @@ class TimeBlockRepository {
     } catch (PDOException $e) {
       error_log("Database error: " . $e->getMessage());
       return null; 
+    }
+  }
+
+  /**
+   * @param int[] $scheduleIds
+   * @return array<int, TimeBlock[]>
+   */
+  public static function getTimeBlocksByScheduleIds(array $scheduleIds): array
+  {
+    $scheduleIds = array_values(array_unique(array_filter(array_map('intval', $scheduleIds), static fn(int $id): bool => $id > 0)));
+    if ($scheduleIds === []) {
+      return [];
+    }
+
+    $placeholders = implode(', ', array_fill(0, count($scheduleIds), '?'));
+
+    try {
+      $conn = \db();
+      $stmt = $conn->prepare(
+        "SELECT * FROM time_blocks WHERE schedule_id IN ($placeholders) ORDER BY FIELD(day_of_week, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), start_time, end_time"
+      );
+      $stmt->execute($scheduleIds);
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      $blocksByScheduleId = [];
+      foreach ($rows as $row) {
+        $scheduleId = (int) $row['schedule_id'];
+        $blocksByScheduleId[$scheduleId][] = new TimeBlock(
+          (int) $row['id'],
+          $scheduleId,
+          (string) $row['day_of_week'],
+          (string) $row['start_time'],
+          (string) $row['end_time'],
+          $row['label'] !== null ? (string) $row['label'] : null
+        );
+      }
+
+      return $blocksByScheduleId;
+    } catch (PDOException $e) {
+      error_log("Database error: " . $e->getMessage());
+      return [];
     }
   }
 

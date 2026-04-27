@@ -3,36 +3,21 @@
 namespace App\Backend\Repositories;
 
 use App\Backend\Models\Schedule;
+use App\Backend\Models\Pool;
+use App\Backend\Models\ScheduleType;
 use DateTime;
 use PDO;
 use PDOException;
 
-require_once '/../models/Schedule.php';
-
 class ScheduleRepository {
   public static function getAllSchedules(): array
     {
-        $array = [];
-        $counter = 0;
-        $conn = \db();
         try {
-            $sql = "SELECT * FROM schedules";
+            $conn = \db();
+            $sql = self::baseReadSql() . " ORDER BY s.effective_date DESC, s.id DESC";
             $result = $conn->query($sql);
-            $data = $result->fetchAll(PDO::FETCH_ASSOC);
-
-            foreach ($data as &$row) {
-                $schedule = new Schedule(
-                    $row['id'],
-                    $row['pool_id'],
-                    $row['schedule_type_id'],
-                    $row['effective_date'],
-                    $row['end_date'],
-                    new DateTime($row['created_at'])
-                );
-                $array[$counter++] = $schedule;
-            }
-
-            return $array;
+            $rows = $result->fetchAll(PDO::FETCH_ASSOC);
+            return self::hydrateSchedules($rows);
         } catch (PDOException $e) {
             error_log("Database error: " . $e->getMessage());
             return [];
@@ -40,25 +25,19 @@ class ScheduleRepository {
     }
   public static function getScheduleById(int $id): ?Schedule 
   {
-    $conn = \db();
     try {
-      $sql = "SELECT * FROM schedules WHERE id = :id";
+      $conn = \db();
+      $sql = self::baseReadSql() . " WHERE s.id = :id LIMIT 1";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':id', $id, PDO::PARAM_INT);
       $stmt->execute();
-      $scheduleArr = $stmt->fetch(PDO::FETCH_ASSOC); //array is the schedule
-
-      if ($scheduleArr !== false) {
-        return new Schedule(
-          $scheduleArr['id'],
-          $scheduleArr['pool_id'],
-          $scheduleArr['schedule_type_id'],
-          $scheduleArr['effective_date'],
-          $scheduleArr['end_date'],
-          new DateTime($scheduleArr['created_at'])
-        );
+      $scheduleArr = $stmt->fetch(PDO::FETCH_ASSOC);
+      if ($scheduleArr === false) {
+        return null;
       }
-      return null;
+
+      $schedules = self::hydrateSchedules([$scheduleArr]);
+      return $schedules[0] ?? null;
     } catch (PDOException $e) {
       error_log("Database error: " . $e->getMessage());
       return null;
@@ -66,26 +45,14 @@ class ScheduleRepository {
   }
 
   public static function getScheduleByPoolId(int $poolId): array {
-    $conn = \db();
     try {
-      $sql = "SELECT * FROM schedules WHERE pool_id = :pool_id";
+      $conn = \db();
+      $sql = self::baseReadSql() . " WHERE s.pool_id = :pool_id ORDER BY s.effective_date DESC, s.id DESC";
       $stmt = $conn->prepare($sql);
       $stmt->bindParam(':pool_id', $poolId, PDO::PARAM_INT);
       $stmt->execute();
-      $schedulesArr = $stmt->fetchAll(PDO::FETCH_ASSOC); //array of schedules
-
-      $schedules = [];
-      foreach ($schedulesArr as $oneScheduleArr) {
-        $schedules[] = new Schedule(
-          $oneScheduleArr['id'],
-          $oneScheduleArr['pool_id'],
-          $oneScheduleArr['schedule_type_id'],
-          $oneScheduleArr['effective_date'],
-          $oneScheduleArr['end_date'],
-          new DateTime($oneScheduleArr['created_at'])
-        );
-      }
-      return $schedules;
+      $schedulesArr = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      return self::hydrateSchedules($schedulesArr);
     } catch (PDOException $e) {
       error_log("Database error: " . $e->getMessage());
       return [];
@@ -203,9 +170,83 @@ class ScheduleRepository {
     }
   }
 
+  private static function baseReadSql(): string
+  {
+    return "SELECT
+        s.id,
+        s.pool_id,
+        s.schedule_type_id,
+        s.effective_date,
+        s.end_date,
+        s.created_at,
+        p.name AS pool_name,
+        p.full_address,
+        p.primary_image_url,
+        p.website,
+        p.map_link,
+        p.latt,
+        p.longt,
+        p.phone,
+        p.is_active,
+        p.created_at AS pool_created_at,
+        st.name AS schedule_type_name,
+        st.description AS schedule_type_description
+      FROM schedules s
+      INNER JOIN pools p ON p.id = s.pool_id
+      INNER JOIN schedule_types st ON st.id = s.schedule_type_id";
+  }
+
+  /**
+   * @param array<int, array<string, mixed>> $rows
+   * @return Schedule[]
+   */
+  private static function hydrateSchedules(array $rows): array
+  {
+    if ($rows === []) {
+      return [];
+    }
+
+    $scheduleIds = array_map(static fn(array $row): int => (int) $row['id'], $rows);
+    $timeBlocksByScheduleId = TimeBlockRepository::getTimeBlocksByScheduleIds($scheduleIds);
+
+    $schedules = [];
+    foreach ($rows as $row) {
+      $pool = new Pool(
+        (int) $row['pool_id'],
+        (string) $row['pool_name'],
+        $row['full_address'] !== null ? (string) $row['full_address'] : null,
+        $row['primary_image_url'] !== null ? (string) $row['primary_image_url'] : null,
+        $row['website'] !== null ? (string) $row['website'] : null,
+        $row['map_link'] !== null ? (string) $row['map_link'] : null,
+        $row['latt'] !== null ? (float) $row['latt'] : null,
+        $row['longt'] !== null ? (float) $row['longt'] : null,
+        $row['phone'] !== null ? (string) $row['phone'] : null,
+        (bool) $row['is_active'],
+        new DateTime((string) $row['pool_created_at'])
+      );
+
+      $scheduleType = new ScheduleType(
+        (int) $row['schedule_type_id'],
+        (string) $row['schedule_type_name'],
+        $row['schedule_type_description'] !== null ? (string) $row['schedule_type_description'] : null
+      );
+
+      $scheduleId = (int) $row['id'];
+      $schedules[] = new Schedule(
+        $scheduleId,
+        $pool,
+        $scheduleType,
+        new DateTime((string) $row['effective_date']),
+        new DateTime((string) $row['end_date']),
+        new DateTime((string) $row['created_at']),
+        $timeBlocksByScheduleId[$scheduleId] ?? []
+      );
+    }
+
+    return $schedules;
+  }
+
 }
 
 
 \class_alias(__NAMESPACE__ . '\\ScheduleRepository', 'ScheduleRepository');
-
-

@@ -7,8 +7,6 @@ use DateTime;
 use PDO;
 use PDOException;
 
-require_once '../models/ScheduleType.php';
-
 class ScheduleTypeRepository {
   public static function getAllScheduleTypes(): array
   {

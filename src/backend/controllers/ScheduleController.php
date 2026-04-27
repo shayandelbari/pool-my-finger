@@ -47,7 +47,7 @@ class ScheduleController {
     }
   }
 
-  private static function getScheduleByPoolId(int $poolId): void {
+  public static function showByPoolId(int $poolId): void {
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
       self::jsonResponse(['error' => 'Method not allowed.'], 405);
       return;
@@ -77,7 +77,17 @@ class ScheduleController {
         'description' => $schedule->getType()->getDescription(),
       ],
       'effectiveDate' => $schedule->getEffectiveDate()->format('Y-m-d'),
-      'endDate' => $schedule->getEndDate()->format('Y-m-d')
+      'endDate' => $schedule->getEndDate()->format('Y-m-d'),
+      'timeBlocks' => array_map(
+        static fn($timeBlock): array => [
+          'id' => $timeBlock->getId(),
+          'day' => $timeBlock->getDay(),
+          'start' => $timeBlock->getStart(),
+          'end' => $timeBlock->getEnd(),
+          'label' => $timeBlock->getLabel(),
+        ],
+        $schedule->getTimeBlocks()
+      ),
     ];
   }
 

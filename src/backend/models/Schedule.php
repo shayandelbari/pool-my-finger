@@ -12,8 +12,12 @@ class Schedule
     private DateTime $effectiveDate;
     private DateTime $endDate;
     private DateTime $createdAt;
+    /**
+     * @var TimeBlock[]
+     */
+    private array $timeBlocks;
 
-    public function __construct(int $id, Pool $pool, ScheduleType $type, DateTime $effectiveDate, DateTime $endDate, DateTime $createdAt)
+    public function __construct(int $id, Pool $pool, ScheduleType $type, DateTime $effectiveDate, DateTime $endDate, DateTime $createdAt, array $timeBlocks = [])
     {
         $this->id = $id;
         $this->pool = $pool;
@@ -21,6 +25,7 @@ class Schedule
         $this->effectiveDate = $effectiveDate;
         $this->endDate = $endDate;
         $this->createdAt = $createdAt;
+        $this->timeBlocks = $timeBlocks;
     }
 
     public function getId(): int
@@ -51,6 +56,14 @@ class Schedule
     public function getCreatedAt(): DateTime
     {
         return $this->createdAt;
+    }
+
+    /**
+     * @return TimeBlock[]
+     */
+    public function getTimeBlocks(): array
+    {
+        return $this->timeBlocks;
     }
 }
 

@@ -4,6 +4,7 @@ use App\Backend\Controllers\PoolController;
 
 $method = $_SERVER['REQUEST_METHOD'] ?? '';
 $poolId = null;
+$poolSchedulesId = null;
 
 if ($apiPath === 'pool-types') {
     if ($method === 'GET') {
@@ -17,6 +18,10 @@ if ($apiPath === 'pool-types') {
 
 if (preg_match('/^pools\/(\d+)$/', $apiPath, $matches) === 1) {
     $poolId = (int) $matches[1];
+}
+
+if (preg_match('/^pools\/(\d+)\/schedules$/', $apiPath, $matches) === 1) {
+    $poolSchedulesId = (int) $matches[1];
 }
 
 if ($apiPath === 'pools') {
@@ -59,6 +64,16 @@ if ($poolId !== null) {
         }
 
         PoolController::destroy($poolId);
+        return;
+    }
+
+    methodNotAllowed();
+    return;
+}
+
+if ($poolSchedulesId !== null) {
+    if ($method === 'GET') {
+        \App\Backend\Controllers\ScheduleController::showByPoolId($poolSchedulesId);
         return;
     }
 

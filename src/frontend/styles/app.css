@@ -131,6 +131,18 @@
     @apply w-full max-w-6xl px-4 py-8 mx-auto md:px-8 md:py-12;
   }
 
+  .page-tools-row {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .page-tools-row-home {
+    @apply mb-5;
+  }
+
+  .page-tools-spacer {
+    @apply flex-1;
+  }
+
   .home-hero {
     @apply flex flex-row justify-center p-6 align-middle border shadow-sm rounded-2xl border-primary/30 bg-linear-to-br from-primary/25 via-card/85 to-accent/45 backdrop-blur md:p-8;
   }
@@ -287,6 +299,10 @@
     @apply hidden;
   }
 
+  .pool-detail-body {
+    @apply space-y-5 mt-5;
+  }
+
   .pool-detail-top-row {
     @apply flex flex-col justify-between gap-4 md:flex-row md:items-start;
   }
@@ -303,8 +319,12 @@
     @apply grid gap-3 p-4 mt-5 text-sm border rounded-xl border-primary/20 bg-secondary/30 md:grid-cols-2;
   }
 
+  .pool-detail-meta-item {
+    @apply flex flex-col gap-1;
+  }
+
   .pool-detail-media-wrap {
-    @apply mt-5 aspect-[16/8] w-full overflow-hidden rounded-xl border border-primary/25 bg-muted;
+    @apply aspect-[16/8] w-full overflow-hidden rounded-xl border border-primary/25 bg-muted;
   }
 
   .pool-detail-media {
@@ -312,7 +332,40 @@
   }
 
   .pool-detail-meta-label {
-    @apply font-semibold;
+    @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+  }
+
+  .pool-detail-map-shell {
+    @apply space-y-3;
+  }
+
+  .pool-detail-map-frame {
+    @apply overflow-hidden border rounded-xl border-primary/20 bg-secondary/20;
+  }
+
+  .pool-detail-map-embed {
+    @apply w-full border-0 aspect-[16/9];
+  }
+
+  .pool-detail-map-fallback {
+    @apply p-6 text-sm text-center text-muted-foreground;
+  }
+
+  .pool-detail-action-row {
+    @apply flex flex-col gap-3 sm:flex-row;
+  }
+
+  .pool-detail-action-btn {
+    @apply inline-flex items-center justify-center rounded-md border border-primary bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90;
+  }
+
+  .pool-detail-action-btn.is-secondary {
+    @apply border-primary/25 bg-card text-foreground hover:bg-secondary;
+  }
+
+  .pool-detail-action-btn.is-disabled,
+  .pool-detail-meta-grid a.is-disabled {
+    @apply opacity-60 pointer-events-none;
   }
 
   .pool-schedules-shell {
@@ -323,12 +376,72 @@
     @apply grid grid-cols-1 gap-4 mt-4 md:grid-cols-2 lg:grid-cols-3;
   }
 
-  .pool-schedule-mock-card {
-    @apply p-4 border rounded-xl border-primary/20 bg-secondary/35;
+  .pool-schedule-card {
+    @apply p-4 border rounded-xl border-primary/20 bg-secondary/35 space-y-4;
+  }
+
+  .pool-schedule-card-header {
+    @apply space-y-1;
+  }
+
+  .pool-schedule-block-list {
+    @apply space-y-2;
+  }
+
+  .pool-schedule-block-item {
+    @apply grid gap-1 p-3 text-sm border rounded-lg border-primary/15 bg-card/70;
+  }
+
+  .pool-schedule-block-item.is-empty {
+    @apply text-muted-foreground;
+  }
+
+  .pool-schedule-block-day {
+    @apply font-semibold text-primary;
+  }
+
+  .pool-schedule-block-time {
+    @apply text-sm;
+  }
+
+  .pool-schedule-block-label {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .return-home-shell {
+    @apply flex items-center;
   }
 
   .return-home-link {
-    @apply inline-flex rounded-md border border-primary/30 bg-card px-3 py-1.5 text-sm transition hover:border-primary/50 hover:bg-secondary;
+    @apply inline-flex items-center rounded-full border border-primary/25 bg-secondary/35 px-3.5 py-1.5 text-sm font-medium text-foreground transition hover:border-primary/50 hover:bg-secondary;
+  }
+
+  .theme-toggle {
+    @apply inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/25 bg-card text-foreground shadow-sm transition hover:border-primary/50 hover:bg-secondary cursor-pointer;
+  }
+
+  .theme-toggle:focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-2 ring-offset-background;
+  }
+
+  .theme-toggle-icon {
+    @apply h-5 w-5;
+  }
+
+  .theme-toggle-icon svg {
+    @apply h-full w-full;
+  }
+
+  .theme-toggle-icon-sun {
+    @apply hidden;
+  }
+
+  .dark .theme-toggle-icon-sun {
+    @apply block;
+  }
+
+  .dark .theme-toggle-icon-moon {
+    @apply hidden;
   }
 
   .filter-menu {
@@ -402,4 +515,3 @@
 }
 
 }
-
