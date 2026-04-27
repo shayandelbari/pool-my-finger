@@ -78,6 +78,24 @@ if ($state === 'open'):
 
             <!-- Toggleable filter panel -->
             <div id="menuContainer" class="filter-panel is-hidden">
+
+                <div id="dateTimeContainer" class="filter-datetime-container">
+                    <input type="datetime-local" name="date_time_picker" id="date_time_picker"
+                        class="filter-datetime-input" step="900"
+                        value="<?= htmlspecialchars($defaultDateTime, ENT_QUOTES, 'UTF-8') ?>">
+                </div>
+
+                <div class="filter-range-container">
+                    <label for="distance_range" class="filter-range-text">Distance:</label>
+
+                    <input type="range" id="distance_range" name="distance_range" min="1" max="50" value="50"
+                        class="filter-range-slider">
+
+                    <span class="filter-range-value">
+                        <span id="distanceValue">50</span> km
+                    </span>
+                </div>
+
                 <div class="filter-menu">
                     <label class="filter-option">
                         <input class="filter-checkbox peer" type="checkbox" name="filter[]" value="indoor">
@@ -100,22 +118,6 @@ if ($state === 'open'):
                     </label>
                 </div>
 
-                <div id="dateTimeContainer" class="filter-datetime-container">
-                    <input type="datetime-local" name="date_time_picker" id="date_time_picker"
-                        class="filter-datetime-input" step="900"
-                        value="<?= htmlspecialchars($defaultDateTime, ENT_QUOTES, 'UTF-8') ?>">
-                </div>
-
-                <div class="filter-range-container">
-                    <label for="distance_range" class="filter-range-text">Distance:</label>
-
-                    <input type="range" id="distance_range" name="distance_range" min="1" max="50" value="50"
-                        class="filter-range-slider">
-
-                    <span class="filter-range-value">
-                        <span id="distanceValue">50</span> km
-                    </span>
-                </div>
             </div>
         </section>
 
