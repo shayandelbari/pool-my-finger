@@ -2,7 +2,9 @@
 
 namespace App\Backend\Services;
 
-use App\Backend\Models\TopPoolResult;
+use App\Backend\Models\Pool;
+use App\Backend\Repositories\PoolRepository;
+use App\Backend\Repositories\ScheduleRepository;
 use App\Backend\Repositories\TopPoolsRepository;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -14,103 +16,106 @@ class TopPoolsService
     private const MAX_RADIUS_KM = 50.0;
 
     /**
-     * @return TopPoolResult[]
+     * @param string[] $types
+     * @return array<int, array{pool: Pool, distance: ?float, relevance: ?array<string, mixed>}>
      */
-    public static function findTopPools(string $postalCode, float $radiusKm, DateTimeImmutable $dateTime, ?string $type = null): array
-    {
+    public static function findTopPools(
+        string $postalCode,
+        float $radiusKm,
+        DateTimeImmutable $dateTime,
+        array $types = []
+    ): array {
         $postalCode = trim($postalCode);
         if ($postalCode === '') {
             throw new InvalidArgumentException('postalCode is required.');
         }
 
-        // Basic Canadian postal code validation (minimal)
         if (!preg_match('/^[A-Za-z]\d[A-Za-z][\s-]?\d[A-Za-z]\d$/', $postalCode)) {
             throw new InvalidArgumentException('postalCode must be a valid Canadian postal code.');
         }
 
         if (!is_numeric($radiusKm) || $radiusKm <= 0) {
-            throw new InvalidArgumentException('radius must be a positive number.');
+            throw new InvalidArgumentException('distance must be a positive number.');
         }
 
         if ($radiusKm > self::MAX_RADIUS_KM) {
             $radiusKm = self::MAX_RADIUS_KM;
         }
 
-        $now = new DateTimeImmutable();
-        $sixMonths = $now->modify('+6 months');
-        // Allow a 1-second leeway for nearly-simultaneous timestamps from caller
-        if ($dateTime < $now->modify('-1 second')) {
-            throw new InvalidArgumentException('dateTime cannot be in the past.');
-        }
-        if ($dateTime > $sixMonths) {
-            throw new InvalidArgumentException('dateTime cannot be more than six months in the future.');
-        }
-
-        if ($type !== null) {
-            $type = strtolower(trim($type));
-            if (!in_array($type, self::ALLOWED_TYPES, true)) {
-                throw new InvalidArgumentException('Invalid type value.');
-            }
-        }
-
+        $normalizedTypes = self::normalizeTypes($types);
         [$lat, $lng] = self::geocodePostalCode($postalCode);
-
         [$minLat, $maxLat, $minLng, $maxLng] = self::boundingBox($lat, $lng, $radiusKm);
 
-        $timeStr = $dateTime->format('H:i:s');
-        $candidates = TopPoolsRepository::findCandidates($minLat, $maxLat, $minLng, $maxLng, $dateTime->format('Y-m-d'), $timeStr, $type);
-
-        // Group candidates by pool and pick the single best schedule per pool by time closeness
-        $byPool = [];
-        foreach ($candidates as $row) {
-            $poolId = isset($row['id']) ? (int) $row['id'] : 0;
-            if (!isset($byPool[$poolId])) {
-                $byPool[$poolId] = [];
-            }
-            $byPool[$poolId][] = $row;
+        $candidateRows = TopPoolsRepository::findNearbyPools($minLat, $maxLat, $minLng, $maxLng, $normalizedTypes);
+        if ($candidateRows === []) {
+            return [];
         }
 
-        $results = [];
-        foreach ($byPool as $poolId => $rows) {
-            $best = null;
-            $bestGap = PHP_INT_MAX;
-            foreach ($rows as $row) {
-                if (!isset($row['start_time'])) {
-                    continue;
-                }
-
-                $gap = abs(strtotime($row['start_time']) - strtotime($timeStr));
-                if ($gap < $bestGap) {
-                    $bestGap = $gap;
-                    $best = $row;
-                }
-            }
-
-            if ($best === null) {
+        $distancesByPoolId = [];
+        foreach ($candidateRows as $row) {
+            $poolId = isset($row['pool_id']) ? (int) $row['pool_id'] : (int) ($row['id'] ?? 0);
+            if ($poolId <= 0 || !isset($row['latt'], $row['longt'])) {
                 continue;
             }
 
-            if (!isset($best['latt']) || !isset($best['longt'])) {
-                continue;
-            }
-
-            $poolLat = (float) $best['latt'];
-            $poolLng = (float) $best['longt'];
-            $distanceKm = self::approxDistanceKm($lat, $lng, $poolLat, $poolLng);
+            $distanceKm = self::approxDistanceKm($lat, $lng, (float) $row['latt'], (float) $row['longt']);
             if ($distanceKm > $radiusKm) {
                 continue;
             }
 
-            $tp = TopPoolResult::fromRowWithGap($best, $distanceKm, (int) $bestGap);
-            $results[] = $tp;
+            $distancesByPoolId[$poolId] = $distanceKm;
         }
 
-        // Optionally sort by time gap (closest schedules first)
-        usort($results, fn($a, $b) => $a->getTimeGap() <=> $b->getTimeGap());
+        if ($distancesByPoolId === []) {
+            return [];
+        }
 
-        return $results;
+        $poolIds = array_keys($distancesByPoolId);
+        $pools = PoolRepository::getPoolsByIds($poolIds);
+        if ($pools === []) {
+            return [];
+        }
+
+        $schedulesByPoolId = ScheduleRepository::getSchedulesByPoolIds($poolIds);
+
+        return PoolSearchRelevanceService::buildSearchResults(
+            $pools,
+            $schedulesByPoolId,
+            $dateTime,
+            $distancesByPoolId
+        );
     }
 
+    /**
+     * @param string[] $types
+     * @return string[]
+     */
+    private static function normalizeTypes(array $types): array
+    {
+        $normalized = [];
+        foreach ($types as $type) {
+            if (!is_string($type)) {
+                throw new InvalidArgumentException('Each type filter must be a string value.');
+            }
+
+            $typeName = strtolower(trim($type));
+            if ($typeName === '') {
+                continue;
+            }
+
+            if (!in_array($typeName, self::ALLOWED_TYPES, true)) {
+                throw new InvalidArgumentException('Invalid type value.');
+            }
+
+            $normalized[] = $typeName;
+        }
+
+        return array_values(array_unique($normalized));
+    }
+
+    /**
+     * @return array{0: float, 1: float}
+     */
     private static function geocodePostalCode(string $postalCode): array
     {
         $url = 'https://geocoder.ca/?locate=' . urlencode($postalCode) . '&geoit=XML&json=1';
@@ -144,10 +149,13 @@ class TopPoolsService
         return [$lat, $lng];
     }
 
+    /**
+     * @return array{0: float, 1: float, 2: float, 3: float}
+     */
     private static function boundingBox(float $lat, float $lng, float $radiusKm): array
     {
-        $latRadius = $radiusKm / 110.574; // degrees latitude per km
-        $lngRadius = $radiusKm / (111.320 * cos(deg2rad($lat))); // degrees longitude per km
+        $latRadius = $radiusKm / 110.574;
+        $lngRadius = $radiusKm / (111.320 * cos(deg2rad($lat)));
 
         return [$lat - $latRadius, $lat + $latRadius, $lng - $lngRadius, $lng + $lngRadius];
     }
@@ -156,6 +164,7 @@ class TopPoolsService
     {
         $dy = ($lat2 - $lat1) * 110.574;
         $dx = ($lng2 - $lng1) * 111.320 * cos(deg2rad($lat1));
+
         return sqrt($dx * $dx + $dy * $dy);
     }
 }

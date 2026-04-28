@@ -408,6 +408,14 @@
     @apply text-xs text-muted-foreground;
   }
 
+  .pool-schedule-time-slot-list {
+    @apply grid gap-2;
+  }
+
+  .pool-schedule-time-slot {
+    @apply grid gap-1 rounded-md bg-secondary/35 px-2.5 py-2;
+  }
+
   .return-home-shell {
     @apply flex items-center;
   }

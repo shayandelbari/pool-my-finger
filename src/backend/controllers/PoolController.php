@@ -42,9 +42,16 @@ class PoolController
         }
 
         try {
-            $pools = PoolService::getAllPools(self::readPoolFilters());
+            $poolResults = PoolService::searchPools(self::readPoolFilters());
             self::jsonResponse([
-                'pools' => array_map(fn(Pool $pool): array => self::formatPool($pool), $pools),
+                'pools' => array_map(
+                    static fn(array $result): array => self::formatPoolSearchResult(
+                        $result['pool'],
+                        $result['relevance'] ?? null,
+                        $result['distance'] ?? null
+                    ),
+                    $poolResults
+                ),
             ]);
         } catch (InvalidArgumentException $e) {
             self::jsonResponse(['error' => $e->getMessage()], 400);
@@ -151,7 +158,7 @@ class PoolController
     }
 
     /**
-     * @return array{name?: string, types?: string[]}
+     * @return array{name?: string, time?: string, types?: string[]}
      */
     private static function readPoolFilters(): array
     {
@@ -194,6 +201,18 @@ class PoolController
             $filters['types'] = $types;
         }
 
+        if (array_key_exists('time', $_GET)) {
+            $rawTime = $_GET['time'];
+            if (!is_string($rawTime)) {
+                throw new InvalidArgumentException('time filter must be a datetime string.');
+            }
+
+            $time = trim($rawTime);
+            if ($time !== '') {
+                $filters['time'] = $time;
+            }
+        }
+
         return $filters;
     }
 
@@ -224,6 +243,22 @@ class PoolController
                 $pool->getTypes()
             ),
         ];
+    }
+
+    /**
+     * @param array<string, mixed>|null $relevance
+     */
+    private static function formatPoolSearchResult(Pool $pool, ?array $relevance, ?float $distance = null): array
+    {
+        $payload = self::formatPool($pool);
+        $payload['relevance'] = $relevance;
+
+        if ($distance !== null) {
+            $payload['distance'] = round($distance, 2);
+            $payload['distanceChipText'] = 'Distance: ' . number_format($distance, 1) . ' km';
+        }
+
+        return $payload;
     }
 
     // Controller helper: emitting HTTP status and JSON payload is endpoint-layer behavior.

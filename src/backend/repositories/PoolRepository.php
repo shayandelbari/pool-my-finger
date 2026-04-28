@@ -124,6 +124,46 @@ class PoolRepository
         }
     }
 
+    /**
+     * @param int[] $poolIds
+     * @return Pool[]
+     */
+    public static function getPoolsByIds(array $poolIds): array
+    {
+        $poolIds = array_values(array_unique(array_filter(array_map('intval', $poolIds), static fn(int $id): bool => $id > 0)));
+        if ($poolIds === []) {
+            return [];
+        }
+
+        try {
+            $conn = \db();
+            $placeholders = implode(', ', array_fill(0, count($poolIds), '?'));
+            $stmt = $conn->prepare(
+                "SELECT
+                    id,
+                    name,
+                    full_address,
+                    primary_image_url,
+                    website,
+                    map_link,
+                    latt,
+                    longt,
+                    phone,
+                    is_active,
+                    created_at
+                 FROM pools
+                 WHERE id IN ($placeholders)"
+            );
+            $stmt->execute($poolIds);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return self::hydratePoolsWithTypes($rows ?: []);
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public static function createPool(Pool $pool): int
     {
         $conn = \db();

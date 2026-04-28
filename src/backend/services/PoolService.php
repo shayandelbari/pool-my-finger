@@ -4,7 +4,9 @@ namespace App\Backend\Services;
 
 use App\Backend\Models\Pool;
 use App\Backend\Repositories\PoolRepository;
+use App\Backend\Repositories\ScheduleRepository;
 use DateTime;
+use DateTimeImmutable;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -27,6 +29,38 @@ class PoolService
     public static function getAllPools(array $filters = []): array
     {
         return PoolRepository::getAllPools(self::normalizePoolFilters($filters));
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return array<int, array{pool: Pool, distance: ?float, relevance: ?array<string, mixed>}>
+     */
+    public static function searchPools(array $filters = []): array
+    {
+        $normalizedFilters = self::normalizePoolFilters($filters);
+        $candidateFilters = $normalizedFilters;
+        unset($candidateFilters['time']);
+
+        $pools = PoolRepository::getAllPools($candidateFilters);
+        if ($pools === []) {
+            return [];
+        }
+
+        $requestedDateTime = $normalizedFilters['time'] ?? null;
+        if (!$requestedDateTime instanceof DateTimeImmutable) {
+            usort($pools, static fn(Pool $left, Pool $right): int => strcasecmp($left->getName(), $right->getName()));
+
+            return array_map(static fn(Pool $pool): array => [
+                'pool' => $pool,
+                'distance' => null,
+                'relevance' => null,
+            ], $pools);
+        }
+
+        $poolIds = array_map(static fn(Pool $pool): int => $pool->getId(), $pools);
+        $schedulesByPoolId = ScheduleRepository::getSchedulesByPoolIds($poolIds);
+
+        return PoolSearchRelevanceService::buildSearchResults($pools, $schedulesByPoolId, $requestedDateTime);
     }
 
     // Service layer: ID validation and orchestration are application concerns, not HTTP or SQL concerns.
@@ -337,7 +371,7 @@ class PoolService
 
     /**
      * @param array<string, mixed> $filters
-     * @return array{name?: string, types?: string[]}
+     * @return array{name?: string, time?: DateTimeImmutable, types?: string[]}
      */
     private static function normalizePoolFilters(array $filters): array
     {
@@ -384,7 +418,30 @@ class PoolService
             }
         }
 
+        if (array_key_exists('time', $filters)) {
+            $rawTime = $filters['time'];
+            if ($rawTime instanceof DateTimeImmutable) {
+                $normalized['time'] = $rawTime;
+            } elseif (is_string($rawTime)) {
+                $trimmedTime = trim($rawTime);
+                if ($trimmedTime !== '') {
+                    $normalized['time'] = self::parseDateTimeFilter($trimmedTime);
+                }
+            } elseif ($rawTime !== null) {
+                throw new InvalidArgumentException('time filter must be a datetime string.');
+            }
+        }
+
         return $normalized;
+    }
+
+    private static function parseDateTimeFilter(string $rawTime): DateTimeImmutable
+    {
+        try {
+            return new DateTimeImmutable($rawTime);
+        } catch (\Exception $e) {
+            throw new InvalidArgumentException('time filter must be a valid datetime.');
+        }
     }
 }
 

@@ -138,7 +138,7 @@ if ($state === 'open'):
 let mainFilterOpen = false;
 const CARDS_PER_PAGE = 10;
 const CANADIAN_POSTAL_CODE_RE = /^[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d$/;
-const POSTAL_FILTER_API_URL = '<?php echo API_URL; ?>/pools/postal-search';
+const POSTAL_FILTER_API_URL = '<?php echo API_URL; ?>/pools-top';
 const NAME_FILTER_API_URL = '<?php echo API_URL; ?>/pools';
 const FILTER_TYPE_TO_API_TYPE = {
     indoor: 'pisi',
@@ -179,10 +179,15 @@ function poolCardTemplate(pool) {
     const imageUrl = (pool.imageUrl && pool.imageUrl.trim() !== '') ?
         pool.imageUrl :
         fallbackImage;
+    const chipMarkup = [];
 
-    const distanceText = typeof pool.distance === 'number' && Number.isFinite(pool.distance) ?
-        `Distance: ${pool.distance.toFixed(1)} km` :
-        'Distance: TBD';
+    if (pool.timeChipText) {
+        chipMarkup.push(`<span class="pool-chip pool-chip-open">${escapeHtml(pool.timeChipText)}</span>`);
+    }
+
+    if (pool.distanceChipText) {
+        chipMarkup.push(`<span class="pool-chip pool-chip-distance">${escapeHtml(pool.distanceChipText)}</span>`);
+    }
 
     return `
             <article class="pool-card">
@@ -195,10 +200,7 @@ function poolCardTemplate(pool) {
                         <h3 class="pool-card-title">${escapeHtml(pool.name || 'Unknown pool')}</h3>
                         <p class="pool-card-address">${escapeHtml(pool.address || 'Address unavailable')}</p>
 
-                        <div class="pool-card-chip-row">
-                            <span class="pool-chip pool-chip-open">Open now: TBD</span>
-                            <span class="pool-chip pool-chip-distance">${escapeHtml(distanceText)}</span>
-                        </div>
+                        ${chipMarkup.length > 0 ? `<div class="pool-card-chip-row">${chipMarkup.join('')}</div>` : ''}
 
                         <div class="pool-type-badges-row">
                             ${poolTypeBadges(pool.types)}
@@ -427,10 +429,14 @@ function normalizePoolRecord(pool) {
             .longitude) : null),
         distance: typeof pool.distance === 'number' ? pool.distance : (pool.distance != null ? Number(pool.distance) :
             null),
+        distanceChipText: pool.distanceChipText || null,
         phone: pool.phone || null,
         active: typeof pool.active === 'boolean' ? pool.active : true,
         createdAt: pool.createdAt || null,
-        types: Array.isArray(pool.types) ? pool.types : []
+        types: Array.isArray(pool.types) ? pool.types : [],
+        relevance: pool.relevance && typeof pool.relevance === 'object' ? pool.relevance : null,
+        timeChipText: pool.relevance && typeof pool.relevance.timeChipText === 'string' ? pool.relevance.timeChipText :
+            null
     };
 }
 

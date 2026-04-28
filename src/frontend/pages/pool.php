@@ -252,14 +252,39 @@ $poolId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
         });
     }
 
+    function groupTimeBlocksByDay(timeBlocks) {
+        return timeBlocks.reduce((groups, block) => {
+            const day = block && block.day ? block.day : 'Day unavailable';
+            const existingGroup = groups.find((group) => group.day === day);
+
+            if (existingGroup) {
+                existingGroup.blocks.push(block);
+                return groups;
+            }
+
+            groups.push({
+                day,
+                blocks: [block]
+            });
+            return groups;
+        }, []);
+    }
+
     function scheduleCardTemplate(schedule) {
         const timeBlocks = Array.isArray(schedule.timeBlocks) ? schedule.timeBlocks : [];
-        const blocksMarkup = timeBlocks.length > 0
-            ? timeBlocks.map((block) => `
+        const groupedBlocks = groupTimeBlocksByDay(timeBlocks);
+        const blocksMarkup = groupedBlocks.length > 0
+            ? groupedBlocks.map((group) => `
                 <li class="pool-schedule-block-item">
-                    <span class="pool-schedule-block-day">${escapeHtml(block.day || 'Day unavailable')}</span>
-                    <span class="pool-schedule-block-time">${escapeHtml(formatTime(block.start))} - ${escapeHtml(formatTime(block.end))}</span>
-                    ${block.label ? `<span class="pool-schedule-block-label">${escapeHtml(block.label)}</span>` : ''}
+                    <span class="pool-schedule-block-day">${escapeHtml(group.day)}</span>
+                    <div class="pool-schedule-time-slot-list">
+                        ${group.blocks.map((block) => `
+                            <div class="pool-schedule-time-slot">
+                                <span class="pool-schedule-block-time">${escapeHtml(formatTime(block.start))} - ${escapeHtml(formatTime(block.end))}</span>
+                                ${block.label ? `<span class="pool-schedule-block-label">${escapeHtml(block.label)}</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
                 </li>
             `).join('')
             : '<li class="pool-schedule-block-item is-empty">No time blocks available.</li>';

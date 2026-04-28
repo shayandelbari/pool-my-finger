@@ -60,6 +60,43 @@ class ScheduleRepository {
     
   }
 
+  /**
+   * @param int[] $poolIds
+   * @return array<int, Schedule[]>
+   */
+  public static function getSchedulesByPoolIds(array $poolIds): array
+  {
+    $poolIds = array_values(array_unique(array_filter(array_map('intval', $poolIds), static fn(int $id): bool => $id > 0)));
+    if ($poolIds === []) {
+      return [];
+    }
+
+    try {
+      $conn = \db();
+      $placeholders = implode(', ', array_fill(0, count($poolIds), '?'));
+      $sql = self::baseReadSql() . " WHERE s.pool_id IN ($placeholders) ORDER BY s.pool_id, s.effective_date DESC, s.id DESC";
+      $stmt = $conn->prepare($sql);
+      $stmt->execute($poolIds);
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      $schedules = self::hydrateSchedules($rows ?: []);
+
+      $byPoolId = [];
+      foreach ($schedules as $schedule) {
+        $poolId = $schedule->getPool()->getId();
+        if (!isset($byPoolId[$poolId])) {
+          $byPoolId[$poolId] = [];
+        }
+
+        $byPoolId[$poolId][] = $schedule;
+      }
+
+      return $byPoolId;
+    } catch (PDOException $e) {
+      error_log("Database error: " . $e->getMessage());
+      return [];
+    }
+  }
+
   public static function createSchedule(Schedule $schedule): int
   {
     $conn =  \db();
