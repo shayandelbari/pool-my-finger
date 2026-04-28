@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 
@@ -12,72 +13,75 @@
 }
 
 :root {
-  --background: hsl(0 0% 100%);
-  --foreground: hsl(0 0% 3.9%);
+  --font-sans: "Source Sans 3", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+  --background: hsl(30 20% 97%);
+  --foreground: hsl(220 18% 12%);
 
   /*disable element*/
-  --muted: hsl(0 0% 96.1%);
-  --muted-foreground: hsl(0 0% 45.1%);
+  --muted: hsl(30 16% 92%);
+  --muted-foreground: hsl(220 12% 40%);
 
   --card: hsl(0 0% 100%);
-  --card-foreground: hsl(0 0% 3.9%);
+  --card-foreground: hsl(220 18% 12%);
 
   --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(0 0% 3.9%);
+  --popover-foreground: hsl(220 18% 12%);
 
-  --border: hsl(0 0% 89.8%);
-  --input: hsl(0 0% 89.8%);
+  --border: hsl(30 10% 85%);
+  --input: hsl(30 10% 85%);
 
   /*brand colour 1*/
   --primary: hsl(142 76% 36%);
   --primary-foreground: hsl(0 0% 9%);
 
   /*brand colour 2*/
-  --secondary: hsl(142 35% 94%);
-  --secondary-foreground: hsl(142 45% 20%);
+  --secondary: hsl(30 18% 93%);
+  --secondary-foreground: hsl(220 15% 20%);
 
-  --accent: hsl(142 45% 90%);
-  --accent-foreground: hsl(142 55% 20%);
+  --accent: hsl(30 22% 90%);
+  --accent-foreground: hsl(220 15% 20%);
 
   /*warnings and whatnot*/
   --destructive: hsl(0 72.2% 50.6%);
   --destructive-foreground: hsl(0 0% 98%);
 
-  --ring: hsl(0 0% 3.9%);
+  --ring: hsl(220 18% 12%);
 
   /*rounded corners (default radius)*/
   --radius: 0.5rem;
 }
 
 .dark {
-  --background: hsl(0 0% 3.9%);
+  --background: hsl(210 18% 7%);
   --foreground: hsl(0 0% 98%);
 
-  --muted: hsl(0 0% 14.9%);
-  --muted-foreground: hsl(0 0% 63.9%);
+  --muted: hsl(210 15% 16%);
+  --muted-foreground: hsl(210 12% 66%);
 
-  --card: hsl(0 0% 3.9%);
+  --card: hsl(210 18% 10%);
   --card-foreground: hsl(0 0% 98%);
 
-  --popover: hsl(0 0% 3.9%);
+  --popover: hsl(210 18% 10%);
   --popover-foreground: hsl(0 0% 98%);
 
-  --border: hsl(0 0% 14.9%);
-  --input: hsl(0 0% 14.9%);
+  --border: hsl(210 12% 20%);
+  --input: hsl(210 12% 20%);
 
   --primary: hsl(186, 44%, 52%);
   --primary-foreground: hsl(0 0% 98%);
 
-  --secondary: hsl(186, 67%, 18%);
+  --secondary: hsl(210 16% 15%);
   --secondary-foreground: hsl(0 0% 98%);
 
-  --accent: hsl(186, 67%, 18%);
-  --accent-foreground: hsl(142 28% 92%);
+  --accent: hsl(210 16% 14%);
+  --accent-foreground: hsl(210 20% 92%);
 
   --destructive: hsl(0 62.8% 30.6%);
   --destructive-foreground: hsl(0 0% 98%);
 
-  --ring: hsl(0 0% 83.1%);
+  --ring: hsl(210 30% 85%);
 }
 
 @theme inline {
@@ -123,12 +127,24 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-feature-settings: "liga" 1, "kern" 1;
+    letter-spacing: 0.01em;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 }
 
 @layer components {
   .home-shell {
-    @apply w-full max-w-6xl px-4 py-8 mx-auto md:px-8 md:py-12;
+    @apply w-full max-w-6xl px-4 py-8 mx-auto space-y-8 md:px-8 md:py-12;
   }
 
   .page-tools-row {
@@ -144,11 +160,11 @@
   }
 
   .home-hero {
-    @apply flex flex-row justify-center p-6 align-middle border shadow-sm rounded-2xl border-primary/30 bg-linear-to-br from-primary/25 via-card/85 to-accent/45 backdrop-blur md:p-8;
+    @apply flex flex-row justify-center p-6 align-middle border shadow-sm rounded-3xl border-primary/15 bg-linear-to-br from-primary/10 via-card to-accent/50 md:p-9;
   }
 
   .home-icon {
-    @apply h-25;
+    @apply h-20 md:h-24;
   }
 
   .home-title {
@@ -160,7 +176,7 @@
   }
 
   .home-controls-shell {
-    @apply p-4 mt-6 border rounded-2xl border-primary/25 bg-secondary/50 md:p-5;
+    @apply p-4 mt-6 border rounded-3xl border-primary/15 bg-card/90 md:p-6;
   }
 
   .home-controls-row {
@@ -168,7 +184,7 @@
   }
 
   .pool-list-section {
-    @apply mt-8;
+    @apply mt-10;
   }
 
   .pool-list-header-row {
@@ -176,7 +192,7 @@
   }
 
   .pool-list-title {
-    @apply text-xl font-semibold text-primary md:text-2xl;
+    @apply text-2xl font-semibold text-foreground md:text-3xl;
   }
 
   .pool-list-meta {
@@ -184,7 +200,7 @@
   }
 
   .pool-list-status {
-    @apply px-4 py-3 mb-4 text-sm border rounded-xl border-primary/20 bg-card;
+    @apply px-4 py-3 mb-4 text-sm border rounded-2xl border-primary/15 bg-card;
   }
 
   .pool-list-status.is-loading {
@@ -204,11 +220,11 @@
   }
 
   .pool-card-grid {
-    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+    @apply grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3;
   }
 
   .pool-card {
-    @apply overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md;
+    @apply overflow-hidden rounded-3xl border border-primary/15 bg-card shadow-sm hover:border-primary/35 hover:shadow-md;
   }
 
   .pool-card-link {
@@ -224,15 +240,16 @@
   }
 
   .pool-card-content {
-    @apply p-4 space-y-3;
+    @apply p-5 space-y-4;
   }
 
   .pool-card-title {
-    @apply text-lg font-semibold line-clamp-2;
+    @apply text-xl font-semibold leading-snug line-clamp-2;
+    font-family: var(--font-display);
   }
 
   .pool-card-address {
-    @apply text-sm line-clamp-2 text-muted-foreground;
+    @apply text-sm leading-relaxed line-clamp-2 text-muted-foreground;
   }
 
   .pool-card-chip-row {
@@ -244,11 +261,11 @@
   }
 
   .pool-chip-open {
-    @apply border-primary/55 bg-primary/22 text-primary-foreground;
+    @apply border-primary/40 bg-primary/15 text-foreground;
   }
 
   .pool-chip-distance {
-    @apply border-primary/40 bg-primary/14 text-primary-foreground;
+    @apply border-primary/30 bg-secondary text-foreground;
   }
 
   .pool-type-badges-row {
@@ -256,7 +273,7 @@
   }
 
   .pool-type-badge {
-    @apply rounded-md border border-primary/45 bg-primary/16 px-2.5 py-1 text-xs font-semibold text-primary-foreground;
+    @apply rounded-md border border-primary/30 bg-secondary px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-foreground;
   }
 
   .pool-pagination {
@@ -280,7 +297,7 @@
   }
 
   .pool-pagination-btn {
-    @apply rounded-md border border-primary/25 bg-card px-3 py-1.5 text-sm transition hover:border-primary/45 hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer;
+    @apply rounded-md border border-primary/25 bg-card px-3 py-1.5 text-sm hover:border-primary/45 hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer;
   }
 
   .pool-pagination-btn.is-active {
@@ -288,11 +305,11 @@
   }
 
   .pool-detail-shell {
-    @apply w-full max-w-6xl px-4 py-8 mx-auto space-y-6 md:px-8 md:py-12;
+    @apply w-full max-w-6xl px-4 py-8 mx-auto space-y-8 md:px-8 md:py-12;
   }
 
   .pool-detail-hero {
-    @apply p-5 border shadow-sm rounded-2xl border-primary/25 bg-card md:p-7;
+    @apply p-5 border shadow-sm rounded-3xl border-primary/15 bg-card md:p-7;
   }
 
   .pool-detail-content.is-hidden {
@@ -308,7 +325,8 @@
   }
 
   .pool-detail-title {
-    @apply text-2xl font-semibold tracking-tight text-primary md:text-4xl;
+    @apply text-2xl font-semibold tracking-tight text-foreground md:text-4xl;
+    font-family: var(--font-display);
   }
 
   .pool-detail-address {
@@ -316,7 +334,7 @@
   }
 
   .pool-detail-meta-grid {
-    @apply grid gap-3 p-4 mt-5 text-sm border rounded-xl border-primary/20 bg-secondary/30 md:grid-cols-2;
+    @apply grid gap-3 p-4 mt-5 text-sm border rounded-2xl border-primary/15 bg-secondary md:grid-cols-2;
   }
 
   .pool-detail-meta-item {
@@ -324,7 +342,7 @@
   }
 
   .pool-detail-media-wrap {
-    @apply aspect-[16/8] w-full overflow-hidden rounded-xl border border-primary/25 bg-muted;
+    @apply aspect-[16/8] w-full overflow-hidden rounded-2xl border border-primary/15 bg-muted;
   }
 
   .pool-detail-media {
@@ -340,7 +358,7 @@
   }
 
   .pool-detail-map-frame {
-    @apply overflow-hidden border rounded-xl border-primary/20 bg-secondary/20;
+    @apply overflow-hidden border rounded-2xl border-primary/15 bg-secondary/30;
   }
 
   .pool-detail-map-embed {
@@ -356,11 +374,11 @@
   }
 
   .pool-detail-action-btn {
-    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium transition border rounded-md border-primary bg-primary text-primary-foreground hover:opacity-90;
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium border rounded-md border-primary bg-primary text-primary-foreground hover:opacity-90;
   }
 
   .pool-detail-action-btn.is-secondary {
-    @apply border-primary/25 bg-card text-foreground hover:bg-secondary;
+    @apply border-primary/20 bg-card text-foreground hover:bg-secondary;
   }
 
   .pool-detail-action-btn.is-disabled,
@@ -369,15 +387,15 @@
   }
 
   .pool-schedules-shell {
-    @apply p-5 border shadow-sm rounded-2xl border-primary/25 bg-card md:p-7;
+    @apply p-5 border shadow-sm rounded-3xl border-primary/15 bg-card md:p-7;
   }
 
   .pool-schedule-grid {
-    @apply grid grid-cols-1 gap-4 mt-4 md:grid-cols-2 lg:grid-cols-3;
+    @apply grid grid-cols-1 gap-5 mt-4 md:grid-cols-2 lg:grid-cols-3;
   }
 
   .pool-schedule-card {
-    @apply p-4 space-y-4 border rounded-xl border-primary/20 bg-secondary/35;
+    @apply p-4 space-y-4 border rounded-2xl border-primary/15 bg-secondary;
   }
 
   .pool-schedule-card-header {
@@ -389,7 +407,7 @@
   }
 
   .pool-schedule-block-item {
-    @apply grid gap-1 p-3 text-sm border rounded-lg border-primary/15 bg-card/70;
+    @apply grid gap-1 p-3 text-sm border rounded-lg border-primary/10 bg-card/80;
   }
 
   .pool-schedule-block-item.is-empty {
@@ -397,7 +415,8 @@
   }
 
   .pool-schedule-block-day {
-    @apply font-semibold text-primary;
+    @apply font-semibold text-foreground;
+    font-family: var(--font-display);
   }
 
   .pool-schedule-block-time {
@@ -413,7 +432,7 @@
   }
 
   .pool-schedule-time-slot {
-    @apply grid gap-1 rounded-md bg-secondary/35 px-2.5 py-2;
+    @apply grid gap-1 rounded-md bg-secondary/60 px-2.5 py-2;
   }
 
   .return-home-shell {
@@ -421,11 +440,11 @@
   }
 
   .return-home-link {
-    @apply inline-flex items-center rounded-full border border-primary/25 bg-secondary/35 px-3.5 py-1.5 text-sm font-medium text-foreground transition hover:border-primary/50 hover:bg-secondary;
+    @apply inline-flex items-center rounded-full border border-primary/20 bg-secondary px-3.5 py-1.5 text-sm font-medium text-foreground hover:border-primary/45 hover:bg-secondary/80;
   }
 
   .theme-toggle {
-    @apply inline-flex items-center justify-center transition border rounded-full shadow-sm cursor-pointer h-11 w-11 border-primary/25 bg-card text-foreground hover:border-primary/50 hover:bg-secondary;
+    @apply inline-flex items-center justify-center border rounded-full shadow-sm cursor-pointer h-11 w-11 border-primary/20 bg-card text-foreground hover:border-primary/45 hover:bg-secondary;
   }
 
   .theme-toggle:focus-visible {
@@ -453,77 +472,75 @@
   }
 
   .filter-panel.is-hidden {
-  @apply hidden;
-}
+    @apply hidden;
+  }
 
   .filter-menu {
-  @apply grid grid-cols-4 gap-2 mt-4;
-}
+    @apply grid grid-cols-2 gap-2 mt-4 sm:grid-cols-4;
+  }
 
-.filter-option {
-  @apply cursor-pointer;
-}
+  .filter-option {
+    @apply cursor-pointer;
+  }
 
-.filter-checkbox {
-  @apply hidden;
-}
+  .filter-checkbox {
+    @apply hidden;
+  }
 
-.filter-label {
-  @apply flex items-center justify-center px-3 py-2 text-sm font-medium transition border rounded-lg border-primary/25 bg-card hover:bg-secondary;
-}
+  .filter-label {
+    @apply flex items-center justify-center px-3 py-2 text-sm font-medium border rounded-lg border-primary/20 bg-card hover:bg-secondary;
+  }
 
-.filter-checkbox:checked + .filter-label {
-  @apply border-primary bg-primary text-primary-foreground;
-}
+  .filter-checkbox:checked + .filter-label {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
 
-.filter-range-container {
-  @apply flex items-center gap-3 mt-4;
-}
+  .filter-range-container {
+    @apply flex items-center gap-3 mt-4;
+  }
 
-.filter-range-text {
-  @apply text-sm font-medium whitespace-nowrap;
-}
+  .filter-range-text {
+    @apply text-sm font-medium whitespace-nowrap;
+  }
 
-.filter-range-slider {
-  @apply flex-1 cursor-pointer;
-}
+  .filter-range-slider {
+    @apply flex-1 cursor-pointer;
+  }
 
-.filter-range-value {
-  @apply text-sm font-medium whitespace-nowrap;
-}
-.filter-datetime-container {
-  @apply flex justify-center mt-4;
-}
+  .filter-range-value {
+    @apply text-sm font-medium whitespace-nowrap;
+  }
 
-.filter-datetime-input {
-  @apply w-full max-w-xs px-3 py-2 text-sm border rounded-lg border-primary/25 text-foreground;
-  background-color: #e5e7eb;
-  color: #111827;
-   /* cant see that little calander icon with the dark mode, so had to hardcode this bish to be lighter gray. lmk know if its not part of the design style we wanted */
-}
+  .filter-datetime-container {
+    @apply flex justify-center mt-4;
+  }
 
-.filter-datetime-input:focus {
-  @apply outline-none ring-2 ring-primary/40;
-}
+  .filter-datetime-input {
+    @apply w-full max-w-xs px-3 py-2 text-sm border rounded-lg border-primary/20 text-foreground bg-card;
+  }
 
-.home-controls-row {
-  @apply flex flex-row items-center w-full max-w-2xl gap-3 mx-auto;
-}
+  .filter-datetime-input:focus {
+    @apply outline-none ring-2 ring-primary/40;
+  }
 
-.home-controls-row input[name="search_bar"] {
-  @apply flex-1 h-12 min-w-0 px-4 text-sm border rounded-lg border-primary/25 bg-card text-foreground;
-}
+  .home-controls-row {
+    @apply flex flex-row items-center w-full max-w-2xl gap-3 mx-auto;
+  }
 
-.home-controls-row input[name="search_bar"]:focus {
-  @apply outline-none ring-2 ring-primary/40;
-}
+  .home-controls-row input[name="search_bar"] {
+    @apply flex-1 h-12 min-w-0 px-4 text-sm border rounded-xl border-primary/20 bg-card text-foreground;
+  }
 
-.filter-btn {
-  @apply flex items-center justify-center w-12 h-12 p-2 transition border rounded-lg shrink-0 border-primary/25 bg-primary hover:bg-primary/80;
-}
+  .home-controls-row input[name="search_bar"]:focus {
+    @apply outline-none ring-2 ring-primary/40;
+  }
 
-.filter-btn-icon {
-  @apply w-6 h-6;
-}
+  .filter-btn {
+    @apply flex items-center justify-center w-12 h-12 p-2 border rounded-xl shrink-0 border-primary/20 bg-primary hover:bg-primary/90;
+  }
+
+  .filter-btn-icon {
+    @apply w-6 h-6;
+  }
 
 }
